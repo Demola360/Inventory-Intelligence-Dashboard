@@ -10,23 +10,21 @@ st.set_page_config(
     layout="wide"
 )
 
-# PRODUCTION-GRADE DATA PIPELINE (Poisson Compliant)
+# DATA PIPELINE 
 @st.cache_data
 def load_sku_catalog():
-    # 1. Read dataset
-    df = pd.read_csv("cleaned_online_data.zip")
-    
-    # 2. Filter for UK market consistency
+       df = pd.read_csv("cleaned_online_data.zip")
+        # Filter for UK market 
     df_uk = df[df['Country'] == 'United Kingdom'].copy()
     df_uk['InvoiceDate'] = pd.to_datetime(df_uk['InvoiceDate'])
     
-    # 3. Define the total temporal footprint of your data window
+    # temporal footprint of data window
     df_uk['Date'] = df_uk['InvoiceDate'].dt.date
     df_uk['Hour'] = df_uk['InvoiceDate'].dt.hour
     
     total_active_hours = df_uk.groupby(['Date', 'Hour']).ngroups or 1
 
-    # 4. Aggregate total units sold per SKU
+    # 4. Aggregate of total units sold per SKU
     catalog_df = (
         df_uk.groupby("StockCode")
         .agg(
@@ -35,16 +33,16 @@ def load_sku_catalog():
         )
     )
     
-    # 5. Calculate true statistical velocity and enforce a realistic minimum
+    # Calculation of the statistical velocity 
     raw_velocity = catalog_df['Total_Units'] / total_active_hours
     catalog_df['Calculated_Velocity'] = np.maximum(0.2, raw_velocity)
     
-    # Sort for better UX in the full catalogue
+    # Sort by velocity
     catalog_df = catalog_df.sort_values(by='Calculated_Velocity', ascending=False)
     
     return catalog_df.to_dict("index")
 
-# Curated list for the default view
+# Selected list for the default view. This was hard coded from the full dataset
 curated_skus = {
     "22439": {"Description": "6 ROCKET BALLON", "Calculated_Velocity": 0.59},
     "22046": {"Description": "TEA WRAPING PAPER", "Calculated_Velocity": 0.59},
@@ -54,10 +52,9 @@ curated_skus = {
     "22670": {"Description": "FRENCH WC SIGN BLUE METAL", "Calculated_Velocity": 0.53}
 }
 
-# Load the catalog once
 full_catalog = load_sku_catalog()
 
-# SIDEBAR CONTROLS 
+# SIDEBAR  
 
 st.sidebar.header(" Simulation Controls")
 show_all = st.sidebar.checkbox("Explore Full Catalogue")
@@ -67,7 +64,7 @@ sku_catalog = full_catalog if show_all else curated_skus
 selected_sku = st.sidebar.selectbox(
     "Select Target Product", 
     options=list(sku_catalog.keys()),
-    index=4, # Defaults to 20663
+    index=4, 
     format_func=lambda x: f"{x} — {sku_catalog[x]['Description']}"
 )
 
@@ -108,13 +105,13 @@ expected_sales_in_window = normal_velocity * hours_zero_sales
 prob_of_slow_gap = poisson.pmf(0, expected_sales_in_window)
 phantom_stock_confidence = (1 - prob_of_slow_gap) * 100
 
-# MAIN DASHBOARD VISUAL OUTPUT
+# MAIN DASHBOARD
 
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
 st.markdown("---")
 
-# Layout: 3 Columns for Summary Data
+# Summary Data on dashboard
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Sales Rate", f"{normal_velocity:.2f} units/hr")
@@ -125,7 +122,7 @@ with col3:
 
 st.markdown("### Anomaly Assessment")
 
-# Dynamic KPI Alert Card with 3 Tiers (Critical, Warning, Normal)
+# Dynamic Alert 
 if phantom_stock_confidence >= confidence_threshold:
     st.error(f"""
     ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
@@ -146,7 +143,7 @@ else:
     for an item selling at {normal_velocity:.1f} units/hr. No operational response required.
     """)
 
-# 5. OPERATIONAL OUTPUT (Dynamic Staff Worklist)
+# OPERATIONAL OUTPUT 
 
 import hashlib
 
@@ -154,16 +151,14 @@ st.markdown("---")
 st.markdown("###  Automated Floor Staff Worklist")
 st.markdown("This table acts as a 'System of Action', dynamically feeding prioritized tasks directly to staff PDA terminals based on real-time data.")
 
-# Helper function to generate consistent pseudo-random aisle locations based on the SKU
+# Used to generate consistent random aisle locations based on the SKU
 def get_mock_location(sku_str):
     hash_val = int(hashlib.md5(str(sku_str).encode()).hexdigest(), 16)
     return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
 
-# Get the currently selected SKU and grab neighboring items to build a 100% dynamic list
+# To build a 100% dynamic list
 sku_list = list(sku_catalog.keys())
 selected_idx = sku_list.index(selected_sku)
-
-# Select 3 items: the target item + 2 other real items from the catalog
 simulated_skus = [
     selected_sku,
     sku_list[(selected_idx + 1) % len(sku_list)],
@@ -175,12 +170,12 @@ for i, sku in enumerate(simulated_skus):
     # Apply the user's slider velocity to the main item; use pure data for the other two
     vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
     
-    # Calculate Poisson confidence dynamically for each row
+    # To Calculate Poisson confidence dynamically for each row
     exp_sales = vel * hours_zero_sales
     prob_zero = poisson.pmf(0, exp_sales)
     conf = (1 - prob_zero) * 100
     
-    # Assign Priority Tiers matching the Engine Status logic
+    # Priority Tiers matching the Engine Status logic
     if conf >= confidence_threshold:
         tier = "CRITICAL"
     elif conf >= (confidence_threshold - 15):
