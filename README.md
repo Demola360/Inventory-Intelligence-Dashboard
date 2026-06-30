@@ -1,7 +1,9 @@
-# Phantom Inventory Detector
+## Inventory Intelligence Dashboard
 
 **An early-warning system for "missing" inventory that may not actually be on the shelf.**
+
 **Throughout this document and project Inventory and Stock are used interchangably to mean the same thing*
+** Online retail Dataset is used for this project and was obtained from https://archive.ics.uci.edu/dataset/352/online+retail.**
 ---
 
 ## The problem this solves
@@ -27,7 +29,7 @@ This dashboard tackles that problem with statistics instead of guesswork. It ask
 1. The dashboard uses dynamic simulation sliders to manually adjust the sensitivity, the sales rate, and the time elapsed to show how the system responds to varying situations which mimics live data situations.
 2. A curated set of example products is loaded by default, chosen deliberately from the dataset to show three different behaviors side by side: a slow-moving item, a medium-moving item near the alert threshold, and a fast-moving item that triggers an alert almost immediately. This makes the logic easy to follow.
 3. An "Explore Full Catalogue" option is available in the sidebar to demonstrate how the model is model applied across the entire underlying dataset rather than just the curated examples.
-4. The underlying dataset is a publicly available dataset from https://archive.ics.uci.edu/dataset/352/online+retail. It has been filtered to United Kingdom transactions only, treating that subset as a stand-in for a single store branch, since the original dataset has several locations.
+4. The underlying dataset is a publicly available dataset. It has been filtered to United Kingdom transactions only, treating that subset as a stand-in for a single store branch, since the original dataset has several locations.
 5. A simulated worklist shows how this mimics a real operational workflow: prioritized tasks, complete with a fictional aisle/shelf location, automatically generated for staff to act on.
 
 ---
