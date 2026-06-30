@@ -13,7 +13,7 @@ st.set_page_config(
 # DATA PIPELINE 
 @st.cache_data
 def load_sku_catalog():
-       df = pd.read_csv("cleaned_online_data.zip")
+    df = pd.read_csv("cleaned_online_data.zip")
         # Filter for UK market 
     df_uk = df[df['Country'] == 'United Kingdom'].copy()
     df_uk['InvoiceDate'] = pd.to_datetime(df_uk['InvoiceDate'])
