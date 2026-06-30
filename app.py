@@ -14,7 +14,7 @@ st.set_page_config(
 @st.cache_data
 def load_sku_catalog():
     # 1. Read dataset
-    df = pd.read_csv("cleaned_online_data.csv")
+    df = pd.read_csv("cleaned_online_data.zip")
     
     # 2. Filter for UK market consistency
     df_uk = df[df['Country'] == 'United Kingdom'].copy()
