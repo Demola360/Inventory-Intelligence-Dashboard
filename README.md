@@ -1,12 +1,10 @@
 ## Inventory Intelligence Dashboard
 
 **An early-warning system for "missing" inventory that may not actually be on the shelf.**
-
-**Throughout this document and project Inventory and Stock are used interchangably to mean the same thing*
 ** Online retail Dataset is used for this project and was obtained from https://archive.ics.uci.edu/dataset/352/online+retail.**
 ---
 
-## The problem this solves
+## The Phantom Inventory
 
 A Phantom inventory is one that appears in a company's computer system but is physically absent from the shelf due to issues such as misplacement, inventory errors, damage, shrinkage or possible theft
 Imagine you manage a retail store, product hasn't sold in 6 hours. Is that normal? Maybe it's just a slow product, or a quiet time of day or is something wrong? Maybe it's been stolen, misplaced on the wrong shelf, or the listing is broken online. 
