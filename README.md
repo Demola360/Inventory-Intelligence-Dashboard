@@ -4,7 +4,7 @@
 ** Online retail Dataset is used for this project and was obtained from https://archive.ics.uci.edu/dataset/352/online+retail.**
 ---
 
-## The Phantom Inventory
+## The Phantom Inventory Problem
 
 A Phantom inventory is one that appears in a company's computer system but is physically absent from the shelf due to issues such as misplacement, inventory errors, damage, shrinkage or possible theft
 Imagine you manage a retail store, product hasn't sold in 6 hours. Is that normal? Maybe it's just a slow product, or a quiet time of day or is something wrong? Maybe it's been stolen, misplaced on the wrong shelf, or the listing is broken online. 
@@ -45,7 +45,7 @@ The Poisson distribution is the standard statistical tool for modeling the numbe
 
 ## Limitations 
 
-No model is the full picture therfore the key limitations of this approach are:
+The key limitations of this approach are:
 
 1. Built on historical averages, not live conditions.** The "normal" sales rate is calculated from past data. Real-world demand for a product can shift week to week or season to season, so a rate that was accurate last month may no longer reflect today's reality.
 2. A statistically unusual sales gap means a human should go check the shelf, it does not, by itself, confirm theft, misplacement, or any specific cause. The dashboard is designed to direct attention efficiently, not to replace a physical investigation.
@@ -64,6 +64,6 @@ This project is built as a portfolio demonstration of statistical and analytical
 
 ## Tech stack
 
-- Python the code program
+- Python where the program was built.
 - Streamlit for the interactive dashboard interface
 - Poisson distribution (scipy.stats) as the statistical core of the anomaly detection logic
