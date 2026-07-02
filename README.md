@@ -1,7 +1,7 @@
 ## Inventory Intelligence Dashboard
 
 **An early-warning system for "missing" inventory that may not actually be on the shelf.**
-** Online retail Dataset is used for this project and was obtained from https://archive.ics.uci.edu/dataset/352/online+retail.**
+** Online retail Dataset used for this project and was obtained from https://archive.ics.uci.edu/dataset/352/online+retail.**
 ---
 
 ## The Phantom Inventory Problem
