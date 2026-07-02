@@ -1,4 +1,3 @@
-
 import streamlit as st # Note: Standard naming convention is import streamlit as st
 import pandas as pd
 import numpy as np
@@ -14,17 +13,19 @@ st.set_page_config(
 @st.cache_data
 def load_sku_catalog():
     df = pd.read_csv("cleaned_online_data.zip")
-        # Filter for UK market 
+    
+    # Filter for UK market 
     df_uk = df[df['Country'] == 'United Kingdom'].copy()
     df_uk['InvoiceDate'] = pd.to_datetime(df_uk['InvoiceDate'])
     
-    # temporal footprint of data window
-    df_uk['Date'] = df_uk['InvoiceDate'].dt.date
-    df_uk['Hour'] = df_uk['InvoiceDate'].dt.hour
+    # 1. Deduplicate calendar tracking days to find the true timeline length
+    total_trading_days = df_uk['InvoiceDate'].dt.date.nunique()
     
-    total_active_hours = df_uk.groupby(['Date', 'Hour']).ngroups or 1
+    # 2. Define operational trading window based on exploratory data analysis (06:00 - 20:00)
+    hours_per_trading_day = 14 
+    total_operational_hours = total_trading_days * hours_per_trading_day
 
-    # 4. Aggregate of total units sold per SKU
+    # 3. Aggregate total units sold per SKU
     catalog_df = (
         df_uk.groupby("StockCode")
         .agg(
@@ -33,8 +34,8 @@ def load_sku_catalog():
         )
     )
     
-    # Calculation of the statistical velocity 
-    raw_velocity = catalog_df['Total_Units'] / total_active_hours
+    # 4. Normalize sales velocity against total operating hours instead of a pure transactional slice
+    raw_velocity = catalog_df['Total_Units'] / total_operational_hours
     catalog_df['Calculated_Velocity'] = np.maximum(0.2, raw_velocity)
     
     # Sort by velocity
