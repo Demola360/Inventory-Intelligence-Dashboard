@@ -28,9 +28,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# =====================================================================
-# SECTION 1: LOADING THE DATA
-# =====================================================================
+# LOADING THE DATA
+
 DATA_FILE = "aggregated_catalog.csv"
 
 
@@ -76,9 +75,8 @@ CURATED_SKUS = {
 }
 
 
-# =====================================================================
-# SECTION 2: THE STATISTICAL MODEL
-# =====================================================================
+# THE STATISTICAL MODEL
+
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
     """
     Work out how UNUSUAL it is that a product has had zero sales for a
@@ -95,9 +93,8 @@ def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) ->
     }
 
 
-# =====================================================================
 # SECTION 3: SIMULATED OPERATIONAL DETAILS (MOCK DATA)
-# =====================================================================
+
 def get_mock_shelf_location(sku: str) -> str:
     """Generate a consistent, fake aisle/shelf reference for a given SKU."""
     hash_val = int(hashlib.md5(str(sku).encode()).hexdigest(), 16)
@@ -112,9 +109,9 @@ def get_mock_unit_price(sku: str) -> float:
     return float((int(sku_digits) % 135 + 15) / 10)
 
 
-# =====================================================================
+
 # SECTION 4: APP LAYOUT & CONTROL FLOW
-# =====================================================================
+
 full_catalog = load_catalog(DATA_FILE)
 
 if not full_catalog:
