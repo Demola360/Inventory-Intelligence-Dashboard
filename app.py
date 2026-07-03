@@ -265,18 +265,19 @@ else:
 st.markdown("---")
 st.markdown("### Automated Floor Staff Worklist *(simulated demo output)*")
 st.caption(
-    "Everything in this table and summary metrics below (locations, prices, and revenue figures) is "
-    "simulated for demonstration purposes and is not connected to a real warehouse, till, or pricing system."
+    "Everything in this table and the summary metrics below is simulated for "
+    "demonstration purposes and is not connected to a live store system."
 )
 
 worklist_df = build_worklist(
     sku_catalog, selected_sku, normal_velocity, hours_zero_sales, confidence_threshold
 )
 
-critical_count = (worklist_df["Priority Tier"] == "CRITICAL").sum()
-warning_count = (worklist_df["Priority Tier"] == "WARNING").sum()
+# Count how many items in our sample worklist actually need an physical shelf check
+action_required_count = (worklist_df["Priority Tier"] == "CRITICAL").sum()
+monitor_count = (worklist_df["Priority Tier"] == "WARNING").sum()
 
-# Recompute total simulated revenue at risk from the dataframe for the summary metric
+# Only calculate an financial impact value for items that are actually flagged as suspicious
 at_risk_mask = worklist_df["Priority Tier"].isin(["CRITICAL", "WARNING"])
 total_revenue_at_risk = (
     worklist_df.loc[at_risk_mask, "Est. Revenue at Risk (simulated)"]
@@ -285,40 +286,41 @@ total_revenue_at_risk = (
     .sum()
 )
 
-st.subheader("Operational Exceptions & Simulated Financial Exposure")
+st.subheader("Daily Store Action Summary")
 
 metric_col1, metric_col2, metric_col3 = st.columns(3)
 with metric_col1:
     st.metric(
-        label="Critical Breaches (simulated)",
-        value=f"{critical_count} SKUs",
-        delta=f"+{critical_count} Action Required" if critical_count > 0 else "Clear",
+        label="Urgent Stock Checks (simulated)",
+        value=f"{action_required_count} Products",
+        delta=f"+{action_required_count} Go to Shelf" if action_required_count > 0 else "All Clear",
         delta_color="inverse",
     )
 with metric_col2:
     st.metric(
-        label="Warning Flags (simulated)",
-        value=f"{warning_count} SKUs",
-        delta=f"{warning_count} Monitored" if warning_count > 0 else "Stable",
+        label="Items to Watch (simulated)",
+        value=f"{monitor_count} Products",
+        delta="Slow sales" if monitor_count > 0 else "Stable",
     )
 with metric_col3:
+    # If the main product is normal and nothing else is broken, keep this at £0.00 so stakeholders aren't confused
+    display_revenue = total_revenue_at_risk if action_required_count > 0 or monitor_count > 0 else 0.0
     st.metric(
-        label="Simulated Revenue at Risk",
-        value=f"£{total_revenue_at_risk:.2f}",
-        delta="Illustrative only" if total_revenue_at_risk > 0 else "No Exposure",
+        label="Estimated Unsold Value (simulated)",
+        value=f"£{display_revenue:.2f}",
+        delta="Value sitting in backroom" if display_revenue > 0 else "No lost sales",
         delta_color="off",
     )
 
+# Rename columns inside the display table to keep things beautifully simple
 st.dataframe(
-    worklist_df, 
+    worklist_df.rename(columns={
+        "Aisle Location (simulated)": "Where to Check (simulated)",
+        "Est. Revenue at Risk (simulated)": "Potential Missed Sales (simulated)",
+        "Priority Tier": "Action Required?"
+    }), 
     use_container_width=True, 
-    hide_index=True,
-    column_config={
-        "Priority Tier": st.column_config.TextColumn(
-            "Priority Tier",
-            help="Automated alert classification level."
-        )
-    }
+    hide_index=True
 )
 
 st.markdown("---")
