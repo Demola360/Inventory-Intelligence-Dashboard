@@ -173,7 +173,7 @@ is_flagged = phantom_stock_confidence >= (confidence_threshold - 15)
 is_critical = phantom_stock_confidence >= confidence_threshold
 
 mock_price = get_mock_unit_price(selected_sku)
-simulated_missed_revenue = expected_sales_in_window * mock_price if is_flagged else 0.0
+simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged else 0.0
 
 # --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
@@ -232,6 +232,6 @@ if is_flagged:
     with action_col1:
         st.metric("Where to Check", get_mock_shelf_location(selected_sku))
     with action_col2:
-        st.metric("Potential Missed Revenue", f"£{simulated_missed_revenue:.2f}")
+        st.metric("Potential Lost Revenue", f"£{simulated_lost_revenue:.2f}")
 
 st.markdown("---")
