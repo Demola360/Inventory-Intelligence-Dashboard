@@ -265,7 +265,7 @@ else:
 st.markdown("---")
 st.markdown("### Automated Floor Staff Worklist *(simulated demo output)*")
 st.caption(
-    "⚠️ Everything in this table and summary metrics below (locations, prices, and revenue figures) is "
+    "Everything in this table and summary metrics below (locations, prices, and revenue figures) is "
     "simulated for demonstration purposes and is not connected to a real warehouse, till, or pricing system."
 )
 
