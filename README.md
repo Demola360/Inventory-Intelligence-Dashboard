@@ -31,12 +31,32 @@ This is a conscious framing decision, not a misunderstanding of the data. I expl
 
 ## How it works
 
-1. Historical sales data is used to work out how fast each product typically sells, in units per hour. 
-2. 
-5. This is compared against how many hours it's been since the item's last sale.
-6. Using a well-established statistical model (explained below), the dashboard calculates the probability that this "silence" could happen naturally for a product selling at that normal rate.
-7. If that probability is low enough, the item is flagged as a likely phantom-inventory issue, with a recommended action for staff to physically check it.
+The core of this system is a real-time anomaly detection engine powered by a **Poisson Distribution** model. This statistical framework calculates the exact probability of an event occurring a specific number of times within a fixed interval, given a known, constant historical average rate.
 
+1. Estimating the Baseline Sales Velocity
+Using historical transaction logs, the dashboard calculates a baseline sales rate ($\lambda$) for each unique product (SKU), defined as:
+
+$$\lambda = \frac{\text{Total Units Sold}}{\text{Total Operational Hours}}$$
+
+2. Measuring Operational Silence
+The engine tracks the elapsed time ($t$, in hours) since the last recorded scan of that SKU at the till. The expected number of sales during this quiet window is calculated as:
+
+$$\text{Expected Sales } (\mu) = \lambda \times t$$
+
+3. Calculating Anomaly Confidence
+To determine if a sales gap is down to random statistical variance or a physical shelf issue (phantom stock), the model evaluates the probability of observing exactly **zero sales ($k=0$)** given our expected baseline:
+
+$$P(k=0) = \frac{\mu^0 \cdot e^{-\mu}}{0!} = e^{-\mu}$$
+
+The system then converts this probability into an **Anomaly Confidence Score**:
+
+$$\text{Confidence (\%)} = (1 - P(k=0)) \times 100$$
+
+4. Operational Translation & Actionable Output To ensure the tool is practical for front-line store associates, the complex underlying probabilities are abstracted into clear, binary risk tiers. Staff can act immediately on the data without needing to understand the mathematics behind it:
+
+* **Status Normal (< 85% Confidence):** The sales gap falls within expected normal variance. No action required.
+* **Elevated Risk (85%–95% Confidence):** Out-of-the-ordinary sales lag; flagged on the dashboard for remote monitoring.
+* **Critical Alert (≥ 95% Confidence):** It is mathematically highly improbable that a healthy product would experience a silence this long. The item is flagged as a likely phantom-inventory issue. The dashboard isolates the SKU, displays its simulated aisle location, estimates the missed revenue, and outputs a clear directive for staff to physically check the shelf.
 ---
 
 ## Discovering the trading hours from the data itself
@@ -61,16 +81,16 @@ From the Invoice Date column in the data set, which cointains the hour and the m
 | **19:00** | 3,233 |
 | **20:00** | 778 |
 
-Activity is negligible outside 06:00–20:00. I used this **empirically observed 14-hour trading window**, rather than an assumed one, to calculate each product's normal sales velocity — this is what supports treating the UK subset as a single branch with realistic opening hours, rather than an arbitrary framing choice.
+There is no activity outside the 06:00–20:00 time therefore I used this **empirically observed 14-hour trading window**, to calculate each product's normal sales velocity — this is what supports treating the UK subset as a single branch with realistic opening hours, rather than an arbitrary framing choice.
 
 ---
 
 ## What's in the demo dashboard
 
-- **Simulation sliders** let you manually adjust the sales rate, the length of the sales gap, and the alert sensitivity, to see how the model's judgement responds to different conditions in real time.
-- A **curated set of six example products** is loaded by default, chosen deliberately to show a slow-moving, a medium-moving, and a fast-moving item — making the logic easy to follow without needing to browse the full catalogue.
-- An **"Explore Full Catalogue"** option in the sidebar applies the model across every product in the dataset, not just the curated examples.
-- When an item is flagged, a **Recommended Action** card shows a shelf/pick location and an estimated revenue figure. **Both are simulated** — clearly labelled as such throughout the app — to illustrate what a downstream operational output could look like in a system connected to real warehouse and pricing data.
+1. **Simulation sliders** let you manually adjust the sales rate, the length of the sales gap, and the alert sensitivity, to see how the model's judgement responds to different conditions in real time.
+2. A **curated set of six example products** is loaded by default, chosen deliberately to show a slow-moving, a medium-moving, and a fast-moving item — making the logic easy to follow without needing to browse the full catalogue.
+3. An **"Explore Full Catalogue"** option in the sidebar applies the model across every product in the dataset, not just the curated examples.
+4. When an item is flagged, a **Recommended Action** card shows a shelf/pick location and an estimated revenue figure. **Both are simulated** — clearly labelled as such throughout the app — to illustrate what a downstream operational output could look like in a system connected to real warehouse and pricing data.
 
 ---
 
@@ -80,8 +100,10 @@ The Poisson distribution is the standard statistical tool for modelling how many
 
 1. **It directly answers the question being asked.** The dashboard needs "how unlikely is this specific length of time without sales?" — Poisson is purpose-built for exactly that (the probability of zero events in a given window).
 2. **It needs very little data to work.** More sophisticated models (Negative Binomial, ARIMA, ML regressors) need large volumes of clean, regularly-spaced history per item. Poisson only needs one number — the average rate — making it usable even for lower-volume products where richer models would be unreliable.
-3. **It's easily interpreted.** The raw probability is converted into a percentage confidence, so "there's a 2% chance this is a normal pattern" becomes "98% confidence something is wrong" — easier for non-technical staff to act on.
-4. **It mirrors established practice.** Poisson-derived methods are commonly used in real anomaly detection and quality-control settings (e.g. flagging unusually quiet sensors), so this isn't a novel or unusual choice for this kind of problem.
+3. * **Minimal Data Requirements (High Cold-Start Capability):** Unlike complex machine learning models that require months of historical, multi-variable training data, the Poisson model only requires a single parameter: the average historical sales rate ($\lambda$). This makes it incredibly lightweight, highly scalable, and capable of working flawlessly even for low-volume SKUs where more data-hungry models would fail.
+4. * **Mathematically Optimized for Counts and Intervals:** Sales transactions are discrete, independent events occurring in a fixed interval of time. The Poisson distribution is explicitly designed for this exact data structure, allowing us to mathematically isolate "normal variance" from an actual operational anomaly.
+5. * **Elegant Operational Abstraction:** While the underlying probability mass function handles complex calculations, the output can be easily transformed into a directional metric. Converting a raw $2\%$ probability of normal occurrence into a $98\%$ "Anomaly Confidence Score" abstracts the statistical complexity away, leaving front-line staff with an intuitive, actionable metric.
+6. **It mirrors established practice.** Poisson-derived methods are commonly used in real anomaly detection and quality-control settings (e.g. flagging unusually quiet sensors), so this isn't a novel or unusual choice for this kind of problem.
 
 ---
 
@@ -103,7 +125,7 @@ No model is the full picture. The key limitations of this approach are:
 
 ## Estimated business impact (illustrative)
 
-For a branch carrying ~4,000 active SKUs, spot-checking every slow-moving item manually is impractical. If this model correctly narrows daily manual checks down to the highest-confidence 1–2% of the catalogue, that's the difference between checking dozens of items a day versus thousands — freeing staff time for other tasks while still catching the gaps most likely to represent a real issue. This is an illustrative estimate based on catalogue size, not a measured result, given the lack of ground-truth validation noted above.
+For a branch carrying ~4,000 active SKUs, spot-checking every slow-moving item manually is impractical. If this model correctly narrows daily manual checks down to the highest-confidence 1–2% of the catalogue, that is the difference between checking dozens of items a day versus thousands — freeing staff time for other tasks while still catching the gaps most likely to represent a real issue. This is an illustrative estimate based on catalogue size, not a measured result, given the lack of ground-truth validation noted above.
 
 ---
 
@@ -125,7 +147,7 @@ This project has three stages, each in its own script, so the pipeline from raw 
 **What's included in the repo vs. linked externally:**
 - ✅ `clean_data.py` and `prepare_data.py` — included in full, so the entire data-preparation logic is visible and reviewable.
 - ✅ `aggregated_catalog.csv` — included; small enough for GitHub and is the only file the live app needs.
-- 🔗 Raw and intermediate cleaned datasets are **not** stored in this repo (they're large, and the original source is public). The raw data is available directly from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/352/online+retail); the cleaning steps to reproduce the intermediate file are fully documented in `clean_data.py`.
+- 🔗 Raw and intermediate cleaned datasets are **not** stored in this repo (they're large, and the original source is public). The raw data is available directly from the UCI Machine Learning Repository (https://archive.ics.uci.edu/dataset/352/online+retail); the cleaning steps to reproduce the intermediate file are fully documented in `clean_data.py`.
 
 ---
 
