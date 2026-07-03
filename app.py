@@ -127,7 +127,9 @@ else:
     **Observation:** The current {hours_zero_sales}-hour sales gap falls completely within expected normal statistical variance. No operational response required.
     """)
 
+# =====================================================================
 # OPERATIONAL OUTPUT (SYSTEM OF ACTION)
+# =====================================================================
 st.markdown("---")
 st.markdown("### Automated Floor Staff Worklist")
 st.markdown("This table acts as a 'System of Action', dynamically feeding prioritized tasks directly to staff PDA terminals based on real-time data.")
@@ -144,28 +146,14 @@ simulated_skus = [
     sku_list[(selected_idx + 2) % len(sku_list)]
 ]
 
+# Track system status indicators and metrics
 worklist_data = []
-for i, sku in enumerate(simulated_skus):
-    vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
-    
-    exp_sales = vel * hours_zero_sales
-    prob_zero = poisson.pmf(0, exp_sales)
-    conf = (1 - prob_zero) * 100
-    
-    if conf >= confidence_threshold:
-        tier = "CRITICAL"
-    elif conf >= (confidence_threshold - 15):
-        tier = "WARNING"
-    else:
-        tier = "MONITOR"
-
-   worklist_data = []
 critical_count = 0
 warning_count = 0
 total_revenue_at_risk = 0.0
 
 for i, sku in enumerate(simulated_skus):
-    # Adjust velocity for the primary selected SKU versus simulated surrounding SKUs
+    # Adjust velocity for primary selected SKU versus simulated surrounding SKUs
     vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
     
     # Mathematical Framework: Poisson Probability of observing zero sales (k=0) 
@@ -184,7 +172,7 @@ for i, sku in enumerate(simulated_skus):
     else:
         tier = "MONITOR"
 
-    # Generate a stable, pseudo-random price (£1.50 to £15.00) based on the SKU identifier digits
+    # Generate a stable, pseudo-random price (£1.50 to £15.00) based on SKU identifier digits
     sku_digits = "".join(filter(str.isdigit, str(sku)))
     mock_price = float((int(sku_digits) % 135 + 15) / 10) if sku_digits else 4.50
     
@@ -205,3 +193,33 @@ for i, sku in enumerate(simulated_skus):
     })
 
 worklist_df = pd.DataFrame(worklist_data)
+
+# Render metrics summary dashboard right above your table
+st.subheader("📋 Operational Exceptions & Financial Exposure Summary")
+
+col1, col2, col3 = st.columns(3)
+with col1:
+    st.metric(
+        label="Critical Breaches", 
+        value=f"{critical_count} SKUs", 
+        delta=f"+{critical_count} Action Required" if critical_count > 0 else "Clear",
+        delta_color="inverse"
+    )
+with col2:
+    st.metric(
+        label="Warning Flags", 
+        value=f"{warning_count} SKUs",
+        delta=f"{warning_count} Minded" if warning_count > 0 else "Stable"
+    )
+with col3:
+    st.metric(
+        label="Total Revenue at Risk", 
+        value=f"£{total_revenue_at_risk:.2f}",
+        delta="Immediate Financial Leakage" if total_revenue_at_risk > 0 else "No Exposure",
+        delta_color="inverse"
+    )
+
+st.markdown("---")
+
+# Render the clean data table
+st.dataframe(worklist_df, use_container_width=True, hide_index=True)
