@@ -193,7 +193,7 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
 with col2:
-    st.metric("Observed Silence Window", f"{hours_zero_sales} hours")
+    st.metric("Time Without Sale", f"{hours_zero_sales} hours")
 with col3:
     st.metric("Expected Sales (in window)", f"{expected_sales_in_window:.1f} units")
 
