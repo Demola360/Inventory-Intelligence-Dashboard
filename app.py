@@ -1,8 +1,8 @@
-import streamlit as st # Note: Standard naming convention is import streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 from scipy.stats import poisson
-
+import hashlib
 
 st.set_page_config(
     page_title="Inventory Intelligence Dashboard",
@@ -12,54 +12,33 @@ st.set_page_config(
 # DATA PIPELINE 
 @st.cache_data
 def load_sku_catalog():
-    df = pd.read_csv("cleaned_online_data.zip")
+    # Read the light, pre-aggregated file (Fixes BadZipFile completely)
+    df = pd.read_csv("aggregated_catalog.csv")
     
-    # Filter for UK market 
-    df_uk = df[df['Country'] == 'United Kingdom'].copy()
-    df_uk['InvoiceDate'] = pd.to_datetime(df_uk['InvoiceDate'])
-    
-    # 1. Deduplicate calendar tracking days to find the true timeline length
-    total_trading_days = df_uk['InvoiceDate'].dt.date.nunique()
-    
-    # 2. Define operational trading window based on exploratory data analysis (06:00 - 20:00)
-    hours_per_trading_day = 14 
-    total_operational_hours = total_trading_days * hours_per_trading_day
-
-    # 3. Aggregate total units sold per SKU
-    catalog_df = (
-        df_uk.groupby("StockCode")
-        .agg(
-            Description=("Description", "first"),
-            Total_Units=("Quantity", "sum")
-        )
-    )
-    
-    # 4. Normalize sales velocity against total operating hours instead of a pure transactional slice
-    raw_velocity = catalog_df['Total_Units'] / total_operational_hours
-    catalog_df['Calculated_Velocity'] = np.maximum(0.2, raw_velocity)
-    
-    # Sort by velocity
-    catalog_df = catalog_df.sort_values(by='Calculated_Velocity', ascending=False)
+    # Set StockCode as string and index to match previous structure
+    df['StockCode'] = df['StockCode'].astype(str)
+    catalog_df = df.set_index('StockCode')
     
     return catalog_df.to_dict("index")
 
-# Selected list for the default view. This was hard coded from the full dataset
+# Curated examples for the default view (hardcoded historical baselines)
 curated_skus = {
     "22439": {"Description": "6 ROCKET BALLON", "Calculated_Velocity": 0.59},
-    "22046": {"Description": "TEA WRAPING PAPER", "Calculated_Velocity": 0.59},
+    "22046": {"Description": "TEA WRAPPING PAPER", "Calculated_Velocity": 0.59},
     "22713": {"Description": "CARD I LOVE LONDON", "Calculated_Velocity": 1.13},
     "17003": {"Description": "BROCADE RING PURSE", "Calculated_Velocity": 8.04},
     "90062": {"Description": "CARNIVAL BRACELET", "Calculated_Velocity": 0.20},
     "22670": {"Description": "FRENCH WC SIGN BLUE METAL", "Calculated_Velocity": 0.53}
 }
 
+# Load data once at runtime
 full_catalog = load_sku_catalog()
 
-# SIDEBAR  
-
-st.sidebar.header(" Simulation Controls")
+# SIDEBAR CONTROLS
+st.sidebar.header("Simulation Controls")
 show_all = st.sidebar.checkbox("Explore Full Catalogue")
-full_catalog = load_sku_catalog()
+
+# Corrected: Use full_catalog or curated_skus cleanly without double loading
 sku_catalog = full_catalog if show_all else curated_skus
 
 selected_sku = st.sidebar.selectbox(
@@ -91,6 +70,7 @@ hours_zero_sales = st.sidebar.slider(
     step=1,
     key=f"hrs_{selected_sku}"
 )
+
 confidence_threshold = st.sidebar.slider(
     "Alert Sensitivity(%)", 
     min_value=80, 
@@ -100,19 +80,25 @@ confidence_threshold = st.sidebar.slider(
     key="sensitivity_slider"
 )
 
-# POISSON DISTRIBUTION
-
+# POISSON DISTRIBUTION ENGINE
 expected_sales_in_window = normal_velocity * hours_zero_sales
 prob_of_slow_gap = poisson.pmf(0, expected_sales_in_window)
 phantom_stock_confidence = (1 - prob_of_slow_gap) * 100
 
 # MAIN DASHBOARD
-
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
+
+# Framework context for reviewers
+with st.expander(" Methodology & Operational Boundaries (MVP Framework)"):
+    st.markdown("""
+    * **Why Poisson?** It requires minimal data overhead compared to heavy machine learning models, making it highly scalable for long-tail retail items.
+    * **Operational Baseline:** Based on exploratory data analysis, transaction activity strictly occurs within a **14-hour daily window (06:00 - 20:00)**. Sales velocities are normalized against actual operational hours to prevent overnight false-positive alerts.
+    """)
+
 st.markdown("---")
 
-# Summary Data on dashboard
+# Key Metrics
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Sales Rate", f"{normal_velocity:.2f} units/hr")
@@ -123,41 +109,33 @@ with col3:
 
 st.markdown("### Anomaly Assessment")
 
-# Dynamic Alert 
+# Dynamic Alert Thresholds
 if phantom_stock_confidence >= confidence_threshold:
     st.error(f"""
     ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
     **Action Required:** This product has been dry for {hours_zero_sales} hours. Statistically, there is only a 
-    {prob_of_slow_gap*100:.2f}% chance this is a natural sales slump. The item is likely missing, stolen, or misplaced. 
-    A task has been dispatched to floor staff to physically audit the shelf location.
+    {prob_of_slow_gap*100:.2f}% chance this is a natural sales slump. A task has been dispatched to floor staff to audit the shelf location.
     """)
 elif phantom_stock_confidence >= (confidence_threshold - 15):
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** The item is approaching the alert threshold. Sales are unusually slow, but still within 
-    marginal statistical variance. The system will continue to monitor before dispatching staff.
+    **Observation:** The item is approaching the alert threshold. Sales are unusually slow, but still within marginal statistical variance.
     """)
 else:
     st.success(f"""
-    ###  STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-    **Observation:** The current {hours_zero_sales}-hour sales gap falls completely within expected normal statistical variance 
-    for an item selling at {normal_velocity:.1f} units/hr. No operational response required.
+    ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
+    **Observation:** The current {hours_zero_sales}-hour sales gap falls completely within expected normal statistical variance. No operational response required.
     """)
 
-# OPERATIONAL OUTPUT 
-
-import hashlib
-
+# OPERATIONAL OUTPUT (SYSTEM OF ACTION)
 st.markdown("---")
-st.markdown("###  Automated Floor Staff Worklist")
+st.markdown("### Automated Floor Staff Worklist")
 st.markdown("This table acts as a 'System of Action', dynamically feeding prioritized tasks directly to staff PDA terminals based on real-time data.")
 
-# Used to generate consistent random aisle locations based on the SKU
 def get_mock_location(sku_str):
     hash_val = int(hashlib.md5(str(sku_str).encode()).hexdigest(), 16)
     return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
 
-# To build a 100% dynamic list
 sku_list = list(sku_catalog.keys())
 selected_idx = sku_list.index(selected_sku)
 simulated_skus = [
@@ -168,15 +146,12 @@ simulated_skus = [
 
 worklist_data = []
 for i, sku in enumerate(simulated_skus):
-    # Apply the user's slider velocity to the main item; use pure data for the other two
     vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
     
-    # To Calculate Poisson confidence dynamically for each row
     exp_sales = vel * hours_zero_sales
     prob_zero = poisson.pmf(0, exp_sales)
     conf = (1 - prob_zero) * 100
     
-    # Priority Tiers matching the Engine Status logic
     if conf >= confidence_threshold:
         tier = "CRITICAL"
     elif conf >= (confidence_threshold - 15):
@@ -194,6 +169,4 @@ for i, sku in enumerate(simulated_skus):
     })
 
 worklist_df = pd.DataFrame(worklist_data)
-
-# Render the interactive dataframe table inside the app
 st.dataframe(worklist_df, use_container_width=True, hide_index=True)
