@@ -159,14 +159,49 @@ for i, sku in enumerate(simulated_skus):
     else:
         tier = "MONITOR"
 
+   worklist_data = []
+critical_count = 0
+warning_count = 0
+total_revenue_at_risk = 0.0
+
+for i, sku in enumerate(simulated_skus):
+    # Adjust velocity for the primary selected SKU versus simulated surrounding SKUs
+    vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
+    
+    # Mathematical Framework: Poisson Probability of observing zero sales (k=0) 
+    # given an expected sales baseline (lambda * hours)
+    exp_sales = vel * hours_zero_sales
+    prob_zero = poisson.pmf(0, exp_sales)
+    conf = (1 - prob_zero) * 100
+    
+    # Determine the status tier based on user-defined anomaly threshold
+    if conf >= confidence_threshold:
+        tier = "CRITICAL"
+        critical_count += 1
+    elif conf >= (confidence_threshold - 15):
+        tier = "WARNING"
+        warning_count += 1
+    else:
+        tier = "MONITOR"
+
+    # Generate a stable, pseudo-random price (£1.50 to £15.00) based on the SKU identifier digits
+    sku_digits = "".join(filter(str.isdigit, str(sku)))
+    mock_price = float((int(sku_digits) % 135 + 15) / 10) if sku_digits else 4.50
+    
+    # Calculate revenue impact exposure 
+    revenue_at_risk = exp_sales * mock_price
+    if tier in ["CRITICAL", "WARNING"]:
+        total_revenue_at_risk += revenue_at_risk
+
     worklist_data.append({
         "Task ID": f"TSK-{9400 + selected_idx + i}",
         "SKU": sku,
         "Description": sku_catalog[sku]["Description"],
         "Aisle Location": get_mock_location(sku),
+        "Unit Price": f"£{mock_price:.2f}",
+        "Est. Revenue Risk": f"£{revenue_at_risk:.2f}",
         "Anomaly Confidence": f"{conf:.1f}%",
         "Priority Tier": tier
     })
 
 worklist_df = pd.DataFrame(worklist_data)
-st.dataframe(worklist_df, use_container_width=True, hide_index=True)
