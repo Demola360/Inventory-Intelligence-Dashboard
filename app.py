@@ -1,7 +1,7 @@
 """
 Inventory Intelligence Dashboard
 ---------------------------------
-WHAT THIS APP DOES (plain English):
+WHAT THIS APP DOES:
 A shop's till system knows exactly what SHOULD be selling. If a normally
 fast-moving product suddenly stops selling for several hours, that's often
 a sign it's not actually on the shelf anymore (misplaced, damaged, stolen,
@@ -20,7 +20,6 @@ physical branch. See README for full details on this design choice.
 
 import streamlit as st
 import pandas as pd
-import numpy as np
 from scipy.stats import poisson
 import hashlib
 
@@ -165,11 +164,16 @@ confidence_threshold = st.sidebar.slider(
     key="sensitivity_slider",
 )
 
-# --- Model Calculations ---
+# --- Model calculations (done once, reused everywhere below) ---
 result = compute_anomaly_confidence(normal_velocity, hours_zero_sales)
 expected_sales_in_window = result["expected_sales"]
-prob_of_slow_gap = result["probability_of_zero_sales"]
 phantom_stock_confidence = result["anomaly_confidence"]
+
+is_flagged = phantom_stock_confidence >= (confidence_threshold - 15)
+is_critical = phantom_stock_confidence >= confidence_threshold
+
+mock_price = get_mock_unit_price(selected_sku)
+simulated_missed_revenue = expected_sales_in_window * mock_price if is_flagged else 0.0
 
 # --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
@@ -177,14 +181,21 @@ st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sk
 
 with st.expander("Methodology, Sliders, & Operational Boundaries (MVP Framework)"):
     st.markdown("""
-    * **Purpose of Sliders:** In a live store, operational situations change constantly. These simulation controls allow stakeholders to manually alter the sales rates and hours of silence to see exactly how the dashboard's logic dynamically responds to changing real-world conditions.
-    * **Why Poisson?** It only needs a single number (the average sales rate) to work, making it usable even for low-volume products where more data-hungry models would be unreliable.
-    * **Simulation Safeguard:** All floor locations, unit prices, and financial exposure calculations displayed below are completely simulated for demonstration purposes and do not represent live production data.
+    * **Purpose of sliders:** these let you simulate different real-world
+      conditions - a busier or quieter product, a longer or shorter
+      silence, a stricter or looser alert threshold - so you can see how
+      the model's judgement responds, without needing live data.
+    * **Why Poisson?** It only needs a single number (the average sales
+      rate) to work, making it usable even for low-volume products where
+      more data-hungry models would be unreliable.
+    * **Simulation safeguard:** the shelf location and revenue figures
+      below are entirely simulated for demonstration purposes and do not
+      represent live production data.
     """)
 
 st.markdown("---")
 
-# --- Top Level Metrics ---
+# --- Top-level metrics: the only place these numbers are stated ---
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
@@ -198,52 +209,38 @@ st.markdown("---")
 # --- Anomaly Assessment ---
 st.markdown("### Anomaly Assessment")
 
-# Calculate simulated financial exposure if an anomaly is actually happening
-mock_price = get_mock_unit_price(selected_sku)
-simulated_missed_revenue = expected_sales_in_window * mock_price
-
-if phantom_stock_confidence >= confidence_threshold:
+if is_critical:
     st.error(f"""
     ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-    **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours. 
-    There is only a {prob_of_slow_gap * 100:.2f}% chance this is a natural quiet spell.
-    
-    💰 **Simulated Potential Missed Revenue:** This zero-sales gap represents approximately **£{simulated_missed_revenue:.2f}** in missed sales.
+    **Action Required:** a human should verify the shelf/pick location for this item.
     """)
-elif phantom_stock_confidence >= (confidence_threshold - 15):
+elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring.
-    
-    💰 **Simulated Potential Missed Revenue:** If this turns out to be a stock issue, it represents **£{simulated_missed_revenue:.2f}** in stagnant sales volume.
+    **Observation:** sales are unusually slow but still within marginal statistical variance.
+    Worth monitoring before dispatching anyone to check.
     """)
 else:
     st.success(f"""
     ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-    **Observation:** This sales gap falls entirely within expected normal variance for this item. No immediate floor action is required.
+    **Observation:** this sales gap falls within expected normal variance. No action required.
     """)
 
-# --- Scannable Operational Task List ---
-st.markdown("---")
-st.markdown("### Targeted Floor Staff Action List *(simulated demo output)*")
-st.caption(
-    "⚠️ The table below displays only the active target item. All floor locations and financial metrics "
-    "are entirely simulated for demonstration purposes."
-)
+# --- Action card: only appears when the item is flagged, and each fact  ---
+# --- (location, revenue) is stated exactly once, in one place.          ---
+if is_flagged:
+    st.markdown("---")
+    st.markdown("### Recommended Action *(simulated demo output)*")
+    st.caption(
+        "Shelf location and revenue figures below are simulated for "
+        "demonstration purposes and are not connected to a real warehouse, "
+        "till, or pricing system."
+    )
 
-# Build a dead-simple, highly scannable dataframe containing ONLY the selected target item
-action_row = {
-    "SKU": selected_sku,
-    "Description": product_desc,
-    "Where to Check (simulated)": get_mock_shelf_location(selected_sku),
-    "Simulated Potential Missed Revenue": f"£{simulated_missed_revenue:.2f}" if (phantom_stock_confidence >= (confidence_threshold - 15)) else "£0.00"
-}
-worklist_df = pd.DataFrame([action_row])
-
-st.dataframe(
-    worklist_df, 
-    use_container_width=True, 
-    hide_index=True
-)
+    action_col1, action_col2 = st.columns(2)
+    with action_col1:
+        st.metric("Where to Check (simulated)", get_mock_shelf_location(selected_sku))
+    with action_col2:
+        st.metric("Simulated Potential Missed Revenue", f"£{simulated_missed_revenue:.2f}")
 
 st.markdown("---")
