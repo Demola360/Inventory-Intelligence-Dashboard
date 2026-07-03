@@ -2,7 +2,7 @@
 Inventory Intelligence Dashboard
 ---------------------------------
 WHAT THIS APP DOES:
-A shop's till system knows exactly what SHOULD be selling. If a normally
+A store's till system knows exactly what SHOULD be selling. If a normally
 fast-moving product suddenly stops selling for several hours, that's often
 a sign it's not actually on the shelf anymore (misplaced, damaged, stolen,
 or a listing error) - even though the computer still says it's in stock.
@@ -181,13 +181,13 @@ st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sk
 
 with st.expander("Methodology, Sliders, & Operational Boundaries (MVP Framework)"):
     st.markdown("""
+    * **Why Poisson?** It only needs a single number (the average sales
+      rate) to work, making it usable even for low-volume products where
+      more data-hungry models would be unreliable.
     * **Purpose of sliders:** these let you simulate different real-world
       conditions - a busier or quieter product, a longer or shorter
       silence, a stricter or looser alert threshold - so you can see how
       the model's judgement responds, without needing live data.
-    * **Why Poisson?** It only needs a single number (the average sales
-      rate) to work, making it usable even for low-volume products where
-      more data-hungry models would be unreliable.
     * **Simulation safeguard:** the shelf location and revenue figures
       below are entirely simulated for demonstration purposes and do not
       represent live production data.
@@ -212,13 +212,13 @@ st.markdown("### Anomaly Assessment")
 if is_critical:
     st.error(f"""
     ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-    **Action Required:** a human should verify the shelf/pick location for this item.
+    **Action Required:** verify the item at its location.
     """)
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
     **Observation:** sales are unusually slow but still within marginal statistical variance.
-    Worth monitoring before dispatching anyone to check.
+    Worth monitoring before checking item location.
     """)
 else:
     st.success(f"""
