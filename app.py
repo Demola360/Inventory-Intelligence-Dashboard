@@ -37,10 +37,7 @@ DATA_FILE = "aggregated_catalog.csv"
 
 @st.cache_data
 def load_catalog(filepath: str) -> dict:
-    """
-    Load the pre-calculated product catalogue (SKU -> description + normal
-    sales velocity) from a CSV file.
-    """
+    """Load the pre-calculated product catalogue from a CSV file."""
     try:
         df = pd.read_csv(filepath)
     except FileNotFoundError:
@@ -81,10 +78,7 @@ CURATED_SKUS = {
 # SECTION 2: THE STATISTICAL MODEL
 # =====================================================================
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
-    """
-    Work out how UNUSUAL it is that a product has had zero sales for a
-    given number of hours, given how fast it normally sells.
-    """
+    """Calculate the probability that zero sales is an actual anomaly."""
     expected_sales = velocity * hours_since_last_sale
     probability_of_zero_sales = poisson.pmf(0, expected_sales)
     anomaly_confidence = (1 - probability_of_zero_sales) * 100
@@ -97,64 +91,21 @@ def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) ->
 
 
 def classify_priority(confidence: float, threshold: float) -> str:
-    """Turn a raw confidence percentage into an actionable priority label."""
+    """Turn raw statistical confidence into a clear, operational label."""
     if confidence >= threshold:
-        return "CRITICAL"
+        return "🚨 CRITICAL (Check Shelf)"
     elif confidence >= (threshold - 15):
-        return "WARNING"
-    return "MONITOR"
+        return "⚠️ WARNING (Monitor)"
+    return "✅ NORMAL"
 
 
 # =====================================================================
-# SECTION 3: SIMULATED OPERATIONAL DETAILS (MOCK DATA)
+# SECTION 3: SIMULATED OPERATIONS (MOCK DATA)
 # =====================================================================
 def get_mock_shelf_location(sku: str) -> str:
-    """Generate a consistent, fake aisle/shelf reference for a given SKU."""
+    """Generate a consistent, fake aisle reference for the worklist."""
     hash_val = int(hashlib.md5(str(sku).encode()).hexdigest(), 16)
     return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
-
-
-def get_mock_unit_price(sku: str) -> float:
-    """Generate a plausible-looking but entirely FAKE unit price."""
-    sku_digits = "".join(filter(str.isdigit, str(sku)))
-    if not sku_digits:
-        return 4.50
-    return float((int(sku_digits) % 135 + 15) / 10)
-
-
-def build_worklist(sku_catalog: dict, selected_sku: str, normal_velocity: float,
-                   hours_zero_sales: float, confidence_threshold: float) -> pd.DataFrame:
-    """Build a mock worklist table for the selected item and neighboring SKUs."""
-    sku_list = list(sku_catalog.keys())
-    selected_idx = sku_list.index(selected_sku)
-    sample_skus = [
-        selected_sku,
-        sku_list[(selected_idx + 1) % len(sku_list)],
-        sku_list[(selected_idx + 2) % len(sku_list)],
-    ]
-
-    rows = []
-    for i, sku in enumerate(sample_skus):
-        velocity = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
-
-        result = compute_anomaly_confidence(velocity, hours_zero_sales)
-        tier = classify_priority(result["anomaly_confidence"], confidence_threshold)
-
-        mock_price = get_mock_unit_price(sku)
-        simulated_revenue_at_risk = result["expected_sales"] * mock_price
-
-        rows.append({
-            "Task ID": f"TSK-{9400 + selected_idx + i}",
-            "SKU": sku,
-            "Description": sku_catalog[sku]["Description"],
-            "Aisle Location (simulated)": get_mock_shelf_location(sku),
-            "Unit Price (simulated)": f"£{mock_price:.2f}",
-            "Est. Revenue at Risk (simulated)": f"£{simulated_revenue_at_risk:.2f}",
-            "Anomaly Confidence": f"{result['anomaly_confidence']:.1f}%",
-            "Priority Tier": tier,
-        })
-
-    return pd.DataFrame(rows)
 
 
 # =====================================================================
@@ -214,16 +165,17 @@ result = compute_anomaly_confidence(normal_velocity, hours_zero_sales)
 expected_sales_in_window = result["expected_sales"]
 prob_of_slow_gap = result["probability_of_zero_sales"]
 phantom_stock_confidence = result["anomaly_confidence"]
+tier = classify_priority(phantom_stock_confidence, confidence_threshold)
 
 # --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
 
-with st.expander("Methodology & Operational Boundaries (MVP Framework)"):
+with st.expander("Methodology & Simulation Purpose (MVP Framework)"):
     st.markdown("""
-    * **Why Poisson?** It only needs a single number (the average sales rate) to work, making it usable even for low-volume products where more data-hungry models would be unreliable.
-    * **Operational baseline:** trading hours (06:00–20:00) were derived directly from the data itself, not assumed - see README for detail.
-    * **Everything under "Automated Floor Staff Worklist" below (locations, prices, revenue figures) is simulated for demonstration only and is not live operational data.**
+    * **Simulating Live Data:** Retail environments change constantly. The sliders on the left act as a live simulation control panel, letting stakeholders instantly tweak sales velocities and hours of silence to see exactly how the dashboard adapts to fluid store patterns.
+    * **Why Poisson?** It only needs a single baseline metric (the average historical sales rate) to successfully flag a dead sales window, making it highly reliable even for low-volume inventory tracks.
+    * **Operational Boundaries:** Aisle locations are mock values generated consistently via SKU hashing to showcase a scannable floor-staff output without relying on a live production warehouse map.
     """)
 
 st.markdown("---")
@@ -240,85 +192,40 @@ with col3:
 st.markdown("---")
 
 # --- Anomaly Assessment ---
-st.markdown("### Anomaly Assessment")
-if phantom_stock_confidence >= confidence_threshold:
+st.markdown("### Status Assessment")
+if "CRITICAL" in tier:
     st.error(f"""
-    ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-    **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours.
-    Given its normal sales rate, there is only a {prob_of_slow_gap * 100:.2f}% chance this is a
-    natural quiet spell. Recommended action: a human should verify the shelf/pick location.
+    ### {tier} ({phantom_stock_confidence:.1f}% Confidence)
+    **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours. 
+    Given its normal movement patterns, there is only a {prob_of_slow_gap * 100:.2f}% chance this gap is natural. 
+    A team member needs to check the shelf immediately.
     """)
-elif phantom_stock_confidence >= (confidence_threshold - 15):
+elif "WARNING" in tier:
     st.warning(f"""
-    ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** Sales are unusually slow but still within marginal statistical variance.
-    Worth monitoring before dispatching anyone to check.
+    ### {tier} ({phantom_stock_confidence:.1f}% Confidence)
+    **Observation:** Sales are slower than normal but still sit within marginal statistical variance. 
+    Monitor the item over the next shift before dispatching a physical check.
     """)
 else:
     st.success(f"""
-    ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-    **Observation:** This sales gap falls within expected normal variance for a product
-    selling at {normal_velocity:.1f} units/hr. No action required.
+    ### {tier} ({phantom_stock_confidence:.1f}% Anomaly Confidence)
+    **Observation:** This sales gap falls entirely within normal, expected trading fluctuations for an item selling at {normal_velocity:.1f} units/hr. No operational action is required.
     """)
 
-# --- Simulated Operational Worklist ---
+# --- Scannable Floor Staff Action Table ---
 st.markdown("---")
-st.markdown("### Automated Floor Staff Worklist *(simulated demo output)*")
-st.caption(
-    "Everything in this table and the summary metrics below is simulated for "
-    "demonstration purposes and is not connected to a live store system."
-)
+st.markdown("### Floor Staff Action List")
 
-worklist_df = build_worklist(
-    sku_catalog, selected_sku, normal_velocity, hours_zero_sales, confidence_threshold
-)
+# Create a clean, single-row dataframe representing ONLY the active product being evaluated
+action_data = pd.DataFrame([{
+    "SKU Code": selected_sku,
+    "Product Description": product_desc,
+    "Where to Check (simulated)": get_mock_shelf_location(selected_sku),
+    "Current Status": tier
+}])
 
-# Count how many items in our sample worklist actually need an physical shelf check
-action_required_count = (worklist_df["Priority Tier"] == "CRITICAL").sum()
-monitor_count = (worklist_df["Priority Tier"] == "WARNING").sum()
-
-# Only calculate an financial impact value for items that are actually flagged as suspicious
-at_risk_mask = worklist_df["Priority Tier"].isin(["CRITICAL", "WARNING"])
-total_revenue_at_risk = (
-    worklist_df.loc[at_risk_mask, "Est. Revenue at Risk (simulated)"]
-    .str.replace("£", "", regex=False)
-    .astype(float)
-    .sum()
-)
-
-st.subheader("Daily Store Action Summary")
-
-metric_col1, metric_col2, metric_col3 = st.columns(3)
-with metric_col1:
-    st.metric(
-        label="Urgent Stock Checks (simulated)",
-        value=f"{action_required_count} Products",
-        delta=f"+{action_required_count} Go to Shelf" if action_required_count > 0 else "All Clear",
-        delta_color="inverse",
-    )
-with metric_col2:
-    st.metric(
-        label="Items to Watch (simulated)",
-        value=f"{monitor_count} Products",
-        delta="Slow sales" if monitor_count > 0 else "Stable",
-    )
-with metric_col3:
-    # If the main product is normal and nothing else is broken, keep this at £0.00 so stakeholders aren't confused
-    display_revenue = total_revenue_at_risk if action_required_count > 0 or monitor_count > 0 else 0.0
-    st.metric(
-        label="Estimated Unsold Value (simulated)",
-        value=f"£{display_revenue:.2f}",
-        delta="Value sitting in backroom" if display_revenue > 0 else "No lost sales",
-        delta_color="off",
-    )
-
-# Rename columns inside the display table to keep things beautifully simple
 st.dataframe(
-    worklist_df.rename(columns={
-        "Aisle Location (simulated)": "Where to Check (simulated)",
-        "Est. Revenue at Risk (simulated)": "Potential Missed Sales (simulated)",
-        "Priority Tier": "Action Required?"
-    }), 
+    action_data, 
     use_container_width=True, 
     hide_index=True
 )
