@@ -239,44 +239,27 @@ with col3:
 
 st.markdown("---")
 
-# --- Anomaly Assessment & Visualization ---
-main_col, chart_col = st.columns([1.2, 1])
-
-with main_col:
-    st.markdown("### Anomaly Assessment")
-    if phantom_stock_confidence >= confidence_threshold:
-        st.error(f"""
-        ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-        **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours.
-        Given its normal sales rate, there is only a {prob_of_slow_gap * 100:.2f}% chance this is a
-        natural quiet spell. Recommended action: a human should verify the shelf/pick location.
-        """)
-    elif phantom_stock_confidence >= (confidence_threshold - 15):
-        st.warning(f"""
-        ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-        **Observation:** Sales are unusually slow but still within marginal statistical variance.
-        Worth monitoring before dispatching anyone to check.
-        """)
-    else:
-        st.success(f"""
-        ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-        **Observation:** This sales gap falls within expected normal variance for a product
-        selling at {normal_velocity:.1f} units/hr. No action required.
-        """)
-
-with chart_col:
-    st.markdown("### Statistical Probability Curve")
-    # Generate interactive, clear visualization of how probability of zero sales drops over time
-    hours_range = np.arange(1, 25)
-    prob_curve = [poisson.pmf(0, normal_velocity * h) * 100 for h in hours_range]
-    
-    chart_data = pd.DataFrame({
-        "Hours of Silence": hours_range,
-        "Probability of 0 Sales (%)": prob_curve
-    }).set_index("Hours of Silence")
-    
-    st.line_chart(chart_data, y="Probability of 0 Sales (%)", use_container_width=True)
-    st.caption("As time passes without a sale, the line shows how rapidly a 'natural silence' becomes mathematically impossible.")
+# --- Anomaly Assessment ---
+st.markdown("### Anomaly Assessment")
+if phantom_stock_confidence >= confidence_threshold:
+    st.error(f"""
+    ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
+    **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours.
+    Given its normal sales rate, there is only a {prob_of_slow_gap * 100:.2f}% chance this is a
+    natural quiet spell. Recommended action: a human should verify the shelf/pick location.
+    """)
+elif phantom_stock_confidence >= (confidence_threshold - 15):
+    st.warning(f"""
+    ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
+    **Observation:** Sales are unusually slow but still within marginal statistical variance.
+    Worth monitoring before dispatching anyone to check.
+    """)
+else:
+    st.success(f"""
+    ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
+    **Observation:** This sales gap falls within expected normal variance for a product
+    selling at {normal_velocity:.1f} units/hr. No action required.
+    """)
 
 # --- Simulated Operational Worklist ---
 st.markdown("---")
@@ -326,7 +309,6 @@ with metric_col3:
         delta_color="off",
     )
 
-# Clean, styled display of the table using modern dataframe configurations
 st.dataframe(
     worklist_df, 
     use_container_width=True, 
