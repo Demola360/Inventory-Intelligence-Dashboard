@@ -129,28 +129,6 @@ For a branch carrying ~4,000 active SKUs, spot-checking every slow-moving item m
 
 ---
 
-## Data pipeline & repository structure
-
-This project has three stages, each in its own script, so the pipeline from raw data to live dashboard is fully traceable:
-
-```
-├── data/
-│   └── aggregated_catalog.csv     # small, pre-calculated file the app runs on
-├── clean_data.py                  # raw UCI export -> cleaned dataset
-├── prepare_data.py                # cleaned dataset -> aggregated_catalog.csv
-│                                   #   (UK filter, trading-hours filter, velocity calc)
-├── app.py                         # Streamlit dashboard (reads aggregated_catalog.csv)
-├── README.md
-└── requirements.txt
-```
-
-**What's included in the repo vs. linked externally:**
-- ✅ `clean_data.py` and `prepare_data.py` — included in full, so the entire data-preparation logic is visible and reviewable.
-- ✅ `aggregated_catalog.csv` — included; small enough for GitHub and is the only file the live app needs.
-- 🔗 Raw and intermediate cleaned datasets are **not** stored in this repo (they're large, and the original source is public). The raw data is available directly from the UCI Machine Learning Repository (https://archive.ics.uci.edu/dataset/352/online+retail); the cleaning steps to reproduce the intermediate file are fully documented in `clean_data.py`.
-
----
-
 ## Tech stack
 
 - **Python** — core language
