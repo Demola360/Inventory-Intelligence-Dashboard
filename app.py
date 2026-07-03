@@ -230,8 +230,8 @@ if is_flagged:
 
     action_col1, action_col2 = st.columns(2)
     with action_col1:
-        st.metric("Where to Check (simulated)", get_mock_shelf_location(selected_sku))
+        st.metric("Where to Check", get_mock_shelf_location(selected_sku))
     with action_col2:
-        st.metric("Potential Missed Revenue (simulated)", f"£{simulated_missed_revenue:.2f}")
+        st.metric("Potential Missed Revenue", f"£{simulated_missed_revenue:.2f}")
 
 st.markdown("---")
