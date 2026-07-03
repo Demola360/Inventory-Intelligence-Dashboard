@@ -1,3 +1,23 @@
+"""
+Inventory Intelligence Dashboard
+---------------------------------
+WHAT THIS APP DOES (plain English):
+A shop's till system knows exactly what SHOULD be selling. If a normally
+fast-moving product suddenly stops selling for several hours, that's often
+a sign it's not actually on the shelf anymore (misplaced, damaged, stolen,
+or a listing error) - even though the computer still says it's in stock.
+This is called "phantom inventory".
+
+Rather than making a staff member manually check every slow product, this
+tool uses a statistical model (Poisson distribution) to work out how
+UNUSUAL a sales gap really is for that specific product, and only flags
+the ones worth a human going to check.
+
+NOTE ON DATA: the underlying dataset is a UK-filtered subset of a public
+online retail dataset, deliberately repurposed here to simulate a single
+physical branch. See README for full details on this design choice.
+"""
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,43 +29,152 @@ st.set_page_config(
     layout="wide"
 )
 
-# DATA PIPELINE 
+# =====================================================================
+# SECTION 1: LOADING THE DATA
+# =====================================================================
+DATA_FILE = "aggregated_catalog.csv"
+
+
 @st.cache_data
-def load_sku_catalog():
-    # Read the light, pre-aggregated file (Fixes BadZipFile completely)
-    df = pd.read_csv("aggregated_catalog.csv")
-    
-    # Set StockCode as string and index to match previous structure
-    df['StockCode'] = df['StockCode'].astype(str)
-    catalog_df = df.set_index('StockCode')
-    
+def load_catalog(filepath: str) -> dict:
+    """
+    Load the pre-calculated product catalogue (SKU -> description + normal
+    sales velocity) from a CSV file.
+    """
+    try:
+        df = pd.read_csv(filepath)
+    except FileNotFoundError:
+        st.error(
+            f"Data file '{filepath}' was not found. The app needs this "
+            "file to run - please check it has been uploaded alongside "
+            "the app script."
+        )
+        return {}
+    except pd.errors.EmptyDataError:
+        st.error(f"Data file '{filepath}' is empty. Nothing to display.")
+        return {}
+
+    if df.empty or "StockCode" not in df.columns:
+        st.error(
+            "Data file was loaded but is missing expected columns "
+            "(StockCode). Please check the file was generated correctly."
+        )
+        return {}
+
+    df["StockCode"] = df["StockCode"].astype(str)
+    catalog_df = df.set_index("StockCode")
     return catalog_df.to_dict("index")
 
-# Curated examples for the default view (hardcoded historical baselines)
-curated_skus = {
+
+# Fixed reference examples to illustrate low, medium, and high velocities
+CURATED_SKUS = {
     "22439": {"Description": "6 ROCKET BALLON", "Calculated_Velocity": 0.59},
     "22046": {"Description": "TEA WRAPPING PAPER", "Calculated_Velocity": 0.59},
     "22713": {"Description": "CARD I LOVE LONDON", "Calculated_Velocity": 1.13},
     "17003": {"Description": "BROCADE RING PURSE", "Calculated_Velocity": 8.04},
     "90062": {"Description": "CARNIVAL BRACELET", "Calculated_Velocity": 0.20},
-    "22670": {"Description": "FRENCH WC SIGN BLUE METAL", "Calculated_Velocity": 0.53}
+    "22670": {"Description": "FRENCH WC SIGN BLUE METAL", "Calculated_Velocity": 0.53},
 }
 
-# Load data once at runtime
-full_catalog = load_sku_catalog()
 
-# SIDEBAR CONTROLS
+# =====================================================================
+# SECTION 2: THE STATISTICAL MODEL
+# =====================================================================
+def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
+    """
+    Work out how UNUSUAL it is that a product has had zero sales for a
+    given number of hours, given how fast it normally sells.
+    """
+    expected_sales = velocity * hours_since_last_sale
+    probability_of_zero_sales = poisson.pmf(0, expected_sales)
+    anomaly_confidence = (1 - probability_of_zero_sales) * 100
+
+    return {
+        "expected_sales": expected_sales,
+        "probability_of_zero_sales": probability_of_zero_sales,
+        "anomaly_confidence": anomaly_confidence,
+    }
+
+
+def classify_priority(confidence: float, threshold: float) -> str:
+    """Turn a raw confidence percentage into an actionable priority label."""
+    if confidence >= threshold:
+        return "CRITICAL"
+    elif confidence >= (threshold - 15):
+        return "WARNING"
+    return "MONITOR"
+
+
+# =====================================================================
+# SECTION 3: SIMULATED OPERATIONAL DETAILS (MOCK DATA)
+# =====================================================================
+def get_mock_shelf_location(sku: str) -> str:
+    """Generate a consistent, fake aisle/shelf reference for a given SKU."""
+    hash_val = int(hashlib.md5(str(sku).encode()).hexdigest(), 16)
+    return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
+
+
+def get_mock_unit_price(sku: str) -> float:
+    """Generate a plausible-looking but entirely FAKE unit price."""
+    sku_digits = "".join(filter(str.isdigit, str(sku)))
+    if not sku_digits:
+        return 4.50
+    return float((int(sku_digits) % 135 + 15) / 10)
+
+
+def build_worklist(sku_catalog: dict, selected_sku: str, normal_velocity: float,
+                   hours_zero_sales: float, confidence_threshold: float) -> pd.DataFrame:
+    """Build a mock worklist table for the selected item and neighboring SKUs."""
+    sku_list = list(sku_catalog.keys())
+    selected_idx = sku_list.index(selected_sku)
+    sample_skus = [
+        selected_sku,
+        sku_list[(selected_idx + 1) % len(sku_list)],
+        sku_list[(selected_idx + 2) % len(sku_list)],
+    ]
+
+    rows = []
+    for i, sku in enumerate(sample_skus):
+        velocity = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
+
+        result = compute_anomaly_confidence(velocity, hours_zero_sales)
+        tier = classify_priority(result["anomaly_confidence"], confidence_threshold)
+
+        mock_price = get_mock_unit_price(sku)
+        simulated_revenue_at_risk = result["expected_sales"] * mock_price
+
+        rows.append({
+            "Task ID": f"TSK-{9400 + selected_idx + i}",
+            "SKU": sku,
+            "Description": sku_catalog[sku]["Description"],
+            "Aisle Location (simulated)": get_mock_shelf_location(sku),
+            "Unit Price (simulated)": f"£{mock_price:.2f}",
+            "Est. Revenue at Risk (simulated)": f"£{simulated_revenue_at_risk:.2f}",
+            "Anomaly Confidence": f"{result['anomaly_confidence']:.1f}%",
+            "Priority Tier": tier,
+        })
+
+    return pd.DataFrame(rows)
+
+
+# =====================================================================
+# SECTION 4: APP LAYOUT & CONTROL FLOW
+# =====================================================================
+full_catalog = load_catalog(DATA_FILE)
+
+if not full_catalog:
+    st.stop()
+
 st.sidebar.header("Simulation Controls")
 show_all = st.sidebar.checkbox("Explore Full Catalogue")
 
-# Corrected: Use full_catalog or curated_skus cleanly without double loading
-sku_catalog = full_catalog if show_all else curated_skus
+sku_catalog = full_catalog if show_all else CURATED_SKUS
 
 selected_sku = st.sidebar.selectbox(
-    "Select Target Product", 
+    "Select Target Product",
     options=list(sku_catalog.keys()),
-    index=4, 
-    format_func=lambda x: f"{x} — {sku_catalog[x]['Description']}"
+    index=min(4, len(sku_catalog) - 1),
+    format_func=lambda x: f"{x} — {sku_catalog[x]['Description']}",
 )
 
 default_velocity = sku_catalog[selected_sku]["Calculated_Velocity"]
@@ -54,172 +183,160 @@ product_desc = sku_catalog[selected_sku]["Description"]
 st.sidebar.markdown("---")
 
 normal_velocity = st.sidebar.slider(
-    "Normal Sales Velocity (Units/Hour)", 
-    min_value=0.1, 
-    max_value=max(20.0, float(default_velocity) * 1.5), 
-    value=float(default_velocity), 
+    "Normal Sales Velocity (Units/Hour)",
+    min_value=0.1,
+    max_value=max(20.0, float(default_velocity) * 1.5),
+    value=float(default_velocity),
     step=0.1,
-    key=f"vel_{selected_sku}"
+    key=f"vel_{selected_sku}",
 )
 
 hours_zero_sales = st.sidebar.slider(
-    "Current Hours with Zero Sales", 
-    min_value=1, 
-    max_value=24, 
-    value=3, 
+    "Current Hours with Zero Sales",
+    min_value=1,
+    max_value=24,
+    value=3,
     step=1,
-    key=f"hrs_{selected_sku}"
+    key=f"hrs_{selected_sku}",
 )
 
 confidence_threshold = st.sidebar.slider(
-    "Alert Sensitivity(%)", 
-    min_value=80, 
-    max_value=99, 
-    value=95, 
+    "Alert Sensitivity (%)",
+    min_value=80,
+    max_value=99,
+    value=95,
     step=1,
-    key="sensitivity_slider"
+    key="sensitivity_slider",
 )
 
-# POISSON DISTRIBUTION ENGINE
-expected_sales_in_window = normal_velocity * hours_zero_sales
-prob_of_slow_gap = poisson.pmf(0, expected_sales_in_window)
-phantom_stock_confidence = (1 - prob_of_slow_gap) * 100
+# --- Model Calculations ---
+result = compute_anomaly_confidence(normal_velocity, hours_zero_sales)
+expected_sales_in_window = result["expected_sales"]
+prob_of_slow_gap = result["probability_of_zero_sales"]
+phantom_stock_confidence = result["anomaly_confidence"]
 
-# MAIN DASHBOARD
+# --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
 
-# Framework context for reviewers
-with st.expander(" Methodology & Operational Boundaries (MVP Framework)"):
+with st.expander("Methodology & Operational Boundaries (MVP Framework)"):
     st.markdown("""
-    * **Why Poisson?** It requires minimal data overhead compared to heavy machine learning models, making it highly scalable for long-tail retail items.
-    * **Operational Baseline:** Based on exploratory data analysis, transaction activity strictly occurs within a **14-hour daily window (06:00 - 20:00)**. Sales velocities are normalized against actual operational hours to prevent overnight false-positive alerts.
+    * **Why Poisson?** It only needs a single number (the average sales rate) to work, making it usable even for low-volume products where more data-hungry models would be unreliable.
+    * **Operational baseline:** trading hours (06:00–20:00) were derived directly from the data itself, not assumed - see README for detail.
+    * **Everything under "Automated Floor Staff Worklist" below (locations, prices, revenue figures) is simulated for demonstration only and is not live operational data.**
     """)
 
 st.markdown("---")
 
-# Key Metrics
+# --- Top Level Metrics ---
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Sales Rate", f"{normal_velocity:.2f} units/hr")
+    st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
 with col2:
-    st.metric("Time Without Sale", f"{hours_zero_sales} hours")
+    st.metric("Observed Silence Window", f"{hours_zero_sales} hours")
 with col3:
-    st.metric("Expected Sale", f"{expected_sales_in_window:.1f} units")
+    st.metric("Expected Sales (in window)", f"{expected_sales_in_window:.1f} units")
 
-st.markdown("### Anomaly Assessment")
-
-# Dynamic Alert Thresholds
-if phantom_stock_confidence >= confidence_threshold:
-    st.error(f"""
-    ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-    **Action Required:** This product has been dry for {hours_zero_sales} hours. Statistically, there is only a 
-    {prob_of_slow_gap*100:.2f}% chance this is a natural sales slump. A task has been dispatched to floor staff to audit the shelf location.
-    """)
-elif phantom_stock_confidence >= (confidence_threshold - 15):
-    st.warning(f"""
-    ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** The item is approaching the alert threshold. Sales are unusually slow, but still within marginal statistical variance.
-    """)
-else:
-    st.success(f"""
-    ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-    **Observation:** The current {hours_zero_sales}-hour sales gap falls completely within expected normal statistical variance. No operational response required.
-    """)
-
-# =====================================================================
-# OPERATIONAL OUTPUT (SYSTEM OF ACTION)
-# =====================================================================
 st.markdown("---")
-st.markdown("### Automated Floor Staff Worklist")
-st.markdown("This table acts as a 'System of Action', dynamically feeding prioritized tasks directly to staff PDA terminals based on real-time data.")
 
-def get_mock_location(sku_str):
-    hash_val = int(hashlib.md5(str(sku_str).encode()).hexdigest(), 16)
-    return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
+# --- Anomaly Assessment & Visualization ---
+main_col, chart_col = st.columns([1.2, 1])
 
-sku_list = list(sku_catalog.keys())
-selected_idx = sku_list.index(selected_sku)
-simulated_skus = [
-    selected_sku,
-    sku_list[(selected_idx + 1) % len(sku_list)],
-    sku_list[(selected_idx + 2) % len(sku_list)]
-]
-
-# Track system status indicators and metrics
-worklist_data = []
-critical_count = 0
-warning_count = 0
-total_revenue_at_risk = 0.0
-
-for i, sku in enumerate(simulated_skus):
-    # Adjust velocity for primary selected SKU versus simulated surrounding SKUs
-    vel = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
-    
-    # Mathematical Framework: Poisson Probability of observing zero sales (k=0) 
-    # given an expected sales baseline (lambda * hours)
-    exp_sales = vel * hours_zero_sales
-    prob_zero = poisson.pmf(0, exp_sales)
-    conf = (1 - prob_zero) * 100
-    
-    # Determine the status tier based on user-defined anomaly threshold
-    if conf >= confidence_threshold:
-        tier = "CRITICAL"
-        critical_count += 1
-    elif conf >= (confidence_threshold - 15):
-        tier = "WARNING"
-        warning_count += 1
+with main_col:
+    st.markdown("### Anomaly Assessment")
+    if phantom_stock_confidence >= confidence_threshold:
+        st.error(f"""
+        ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
+        **Action Required:** This product has recorded zero sales for {hours_zero_sales} hours.
+        Given its normal sales rate, there is only a {prob_of_slow_gap * 100:.2f}% chance this is a
+        natural quiet spell. Recommended action: a human should verify the shelf/pick location.
+        """)
+    elif phantom_stock_confidence >= (confidence_threshold - 15):
+        st.warning(f"""
+        ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
+        **Observation:** Sales are unusually slow but still within marginal statistical variance.
+        Worth monitoring before dispatching anyone to check.
+        """)
     else:
-        tier = "MONITOR"
+        st.success(f"""
+        ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
+        **Observation:** This sales gap falls within expected normal variance for a product
+        selling at {normal_velocity:.1f} units/hr. No action required.
+        """)
 
-    # Generate a stable, pseudo-random price (£1.50 to £15.00) based on SKU identifier digits
-    sku_digits = "".join(filter(str.isdigit, str(sku)))
-    mock_price = float((int(sku_digits) % 135 + 15) / 10) if sku_digits else 4.50
+with chart_col:
+    st.markdown("### Statistical Probability Curve")
+    # Generate interactive, clear visualization of how probability of zero sales drops over time
+    hours_range = np.arange(1, 25)
+    prob_curve = [poisson.pmf(0, normal_velocity * h) * 100 for h in hours_range]
     
-    # Calculate revenue impact exposure 
-    revenue_at_risk = exp_sales * mock_price
-    if tier in ["CRITICAL", "WARNING"]:
-        total_revenue_at_risk += revenue_at_risk
+    chart_data = pd.DataFrame({
+        "Hours of Silence": hours_range,
+        "Probability of 0 Sales (%)": prob_curve
+    }).set_index("Hours of Silence")
+    
+    st.line_chart(chart_data, y="Probability of 0 Sales (%)", use_container_width=True)
+    st.caption("As time passes without a sale, the line shows how rapidly a 'natural silence' becomes mathematically impossible.")
 
-    worklist_data.append({
-        "Task ID": f"TSK-{9400 + selected_idx + i}",
-        "SKU": sku,
-        "Description": sku_catalog[sku]["Description"],
-        "Aisle Location": get_mock_location(sku),
-        "Unit Price": f"£{mock_price:.2f}",
-        "Est. Revenue Risk": f"£{revenue_at_risk:.2f}",
-        "Anomaly Confidence": f"{conf:.1f}%",
-        "Priority Tier": tier
-    })
+# --- Simulated Operational Worklist ---
+st.markdown("---")
+st.markdown("### Automated Floor Staff Worklist *(simulated demo output)*")
+st.caption(
+    "⚠️ Everything in this table and summary metrics below (locations, prices, and revenue figures) is "
+    "simulated for demonstration purposes and is not connected to a real warehouse, till, or pricing system."
+)
 
-worklist_df = pd.DataFrame(worklist_data)
+worklist_df = build_worklist(
+    sku_catalog, selected_sku, normal_velocity, hours_zero_sales, confidence_threshold
+)
 
-# Render metrics summary dashboard right above your table
-st.subheader("📋 Operational Exceptions & Financial Exposure Summary")
+critical_count = (worklist_df["Priority Tier"] == "CRITICAL").sum()
+warning_count = (worklist_df["Priority Tier"] == "WARNING").sum()
 
-col1, col2, col3 = st.columns(3)
-with col1:
+# Recompute total simulated revenue at risk from the dataframe for the summary metric
+at_risk_mask = worklist_df["Priority Tier"].isin(["CRITICAL", "WARNING"])
+total_revenue_at_risk = (
+    worklist_df.loc[at_risk_mask, "Est. Revenue at Risk (simulated)"]
+    .str.replace("£", "", regex=False)
+    .astype(float)
+    .sum()
+)
+
+st.subheader("Operational Exceptions & Simulated Financial Exposure")
+
+metric_col1, metric_col2, metric_col3 = st.columns(3)
+with metric_col1:
     st.metric(
-        label="Critical Breaches", 
-        value=f"{critical_count} SKUs", 
+        label="Critical Breaches (simulated)",
+        value=f"{critical_count} SKUs",
         delta=f"+{critical_count} Action Required" if critical_count > 0 else "Clear",
-        delta_color="inverse"
+        delta_color="inverse",
     )
-with col2:
+with metric_col2:
     st.metric(
-        label="Warning Flags", 
+        label="Warning Flags (simulated)",
         value=f"{warning_count} SKUs",
-        delta=f"{warning_count} Minded" if warning_count > 0 else "Stable"
+        delta=f"{warning_count} Monitored" if warning_count > 0 else "Stable",
     )
-with col3:
+with metric_col3:
     st.metric(
-        label="Total Revenue at Risk", 
+        label="Simulated Revenue at Risk",
         value=f"£{total_revenue_at_risk:.2f}",
-        delta="Immediate Financial Leakage" if total_revenue_at_risk > 0 else "No Exposure",
-        delta_color="inverse"
+        delta="Illustrative only" if total_revenue_at_risk > 0 else "No Exposure",
+        delta_color="off",
     )
+
+# Clean, styled display of the table using modern dataframe configurations
+st.dataframe(
+    worklist_df, 
+    use_container_width=True, 
+    hide_index=True,
+    column_config={
+        "Priority Tier": st.column_config.TextColumn(
+            "Priority Tier",
+            help="Automated alert classification level."
+        )
+    }
+)
 
 st.markdown("---")
-
-# Render the clean data table
-st.dataframe(worklist_df, use_container_width=True, hide_index=True)
