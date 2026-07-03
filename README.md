@@ -43,22 +43,23 @@ This is a conscious framing decision, not a misunderstanding of the data. I expl
 
 From the Invoice Date column in the data set, which cointains the hour and the minute of the sale, the hour alone is filtererd out to represent the time of the transaction and then I checked when transactions actually occur in the dataset.
 
-| Hour | Number of Transactions |
-| 06:00 | 1 |
-| 07:00 | 3,798 |
-| 08:00 | 8,687 |
-| 09:00 | 21,927 |
-| 10:00 | 37,773 |
-| 11:00 | 48,365 |
-| 12:00 | 70,938 *(Peak)* |
-| 13:00 | 63,019 |
-| 14:00 | 53,251 |
-| 15:00 | 44,790 |
-| 16:00 | 23,715 |
-| 17:00 | 12,941 |
-| 18:00 | 2,895 |
-| 19:00 | 3,233 |
-| 20:00 | 778 |
+| Hour | Transaction Volume (Simulated) |
+| --- | --- |
+| **06:00** | 1 |
+| **07:00** | 3,798 |
+| **08:00** | 8,687 |
+| **09:00** | 21,927 |
+| **10:00** | 37,773 |
+| **11:00** | 48,365 |
+| **12:00** | 70,938 *(Peak)* |
+| **13:00** | 63,019 |
+| **14:00** | 53,251 |
+| **15:00** | 44,790 |
+| **16:00** | 23,715 |
+| **17:00** | 12,941 |
+| **18:00** | 2,895 |
+| **19:00** | 3,233 |
+| **20:00** | 778 |
 
 Activity is negligible outside 06:00–20:00. I used this **empirically observed 14-hour trading window**, rather than an assumed one, to calculate each product's normal sales velocity — this is what supports treating the UK subset as a single branch with realistic opening hours, rather than an arbitrary framing choice.
 
