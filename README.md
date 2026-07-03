@@ -9,21 +9,21 @@
 
 ## The Phantom Inventory Problem
 
-Phantom inventory is stock that appears in a company's system as available, but is physically absent from the shelf — due to misplacement, damage, shrinkage, or theft.
+Phantom inventory is stock that appears in a company's system as available, but is physically absent from the shelf due to misplacement, damage, shrinkage, or theft.
 
-Imagine you manage a retail store and a product hasn't sold in 6 hours. Is that normal? Maybe it's just a slow-moving item, or a quiet time of day. Or maybe it's been stolen, misplaced on the wrong shelf, or the listing is broken. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem means lost sales sitting on a shelf nobody can find.
+Imagine you manage a retail store and a product hasn't sold in 6 hours. Is that normal? Maybe it's just a slow-moving item, or a quiet time of day. Or maybe it's been stolen, misplaced on the wrong shelf, or the listing is broken. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem may mean an item sitting on a shelf nobody can find.
 
-This dashboard tackles that problem with statistics instead of guesswork. It asks one question for any product: *given how fast this item normally sells, how unusual is it that we've seen zero sales for this many hours?* If the answer is "extremely unusual," the item gets flagged for a human to go check.
+This dashboard tackles that problem with statistics instead of guesswork. It asks one question for any product: "given how fast this item normally sells, how unusual is it that we've seen zero sales for this many hours?", if the answer is "extremely unusual," the item gets flagged for a check.
 
-**Why this matters to a business:** manual stock-checking doesn't scale — a store with thousands of SKUs can't have staff walk every aisle every hour. A statistical early-warning layer lets a small team focus their time only on the handful of products where something is genuinely likely to be wrong, rather than checking everything or checking nothing.
+**Why this matters to a business:** random manual inventory checking alone cannot resolve this problem. A store with thousands of SKUs (Stock Keeping Units) cannot have staff walk every aisle every hour. A statistical early-warning layer lets the staff focus their time only on the handful of products where something is genuinely likely to be wrong, rather than checking everything or checking nothing.
 
 ---
 
 ## A note on the dataset
 
-This project deliberately repurposes a well-known, publicly available dataset (in wide use since 2018) rather than using it for its original purpose. The UCI Online Retail dataset records UK-based online wholesale gift orders — not physical shop-floor sales.
+This project deliberately repurposes a well-known, publicly available dataset. The UCI Online Retail dataset rcontains data on a UK-based and registered non-store online retail, not physical shop-floor sales.
 
-I chose to treat the UK-filtered subset of this data as a stand-in for a single retail branch, because the underlying statistical pattern this project demonstrates — detecting unusually long gaps between sales events — is transferable regardless of the original context. The goal of this project isn't the dataset itself; it's showing I can take a familiar, publicly available dataset and apply a different analytical lens to it to solve a different business problem than the one it was originally collected for.
+I chose to treat the UK-filtered subset of this data as a stand-in for a single retail branch, because the underlying statistical pattern this project demonstrates, which is detecting unusually long gaps between sales events, is transferable regardless of the original context. The goal of this project is not the dataset itself; it's showing I can take a familiar, publicly available dataset and apply a different analytical lens to it to solve a different business problem.
 
 This is a conscious framing decision, not a misunderstanding of the data. I explain exactly where the "branch" framing came from below.
 
@@ -31,23 +31,32 @@ This is a conscious framing decision, not a misunderstanding of the data. I expl
 
 ## How it works
 
-1. Historical sales data is used to work out how fast each product typically sells, in units per hour.
-2. This is compared against how many hours it's been since the item's last sale.
-3. Using a well-established statistical model (explained below), the dashboard calculates the probability that this "silence" could happen naturally for a product selling at that normal rate.
-4. If that probability is low enough, the item is flagged as a likely phantom-inventory issue, with a recommended action for staff to physically check it.
+1. Historical sales data is used to work out how fast each product typically sells, in units per hour. 
+2. 
+5. This is compared against how many hours it's been since the item's last sale.
+6. Using a well-established statistical model (explained below), the dashboard calculates the probability that this "silence" could happen naturally for a product selling at that normal rate.
+7. If that probability is low enough, the item is flagged as a likely phantom-inventory issue, with a recommended action for staff to physically check it.
 
 ---
 
 ## Discovering the trading hours from the data itself
 
-Rather than assuming standard shop hours, I checked when transactions actually occur in the dataset:
+From the Invoice Date column in the data set, which cointains the hour and the minute of the sale, the hour alone is filtererd out to represent the time of the transaction and then I checked when transactions actually occur in the dataset.
 
-| Hour | Transactions |
-|------|-------------|
+| Hour | Number of Transactions |
 | 06:00 | 1 |
-| 07:00 | 379 |
+| 07:00 | 3,798 |
 | 08:00 | 8,687 |
-| 11:00–14:00 (peak) | 48,000–71,000 |
+| 09:00 | 21,927 |
+| 10:00 | 37,773 |
+| 11:00 | 48,365 |
+| 12:00 | 70,938 *(Peak)* |
+| 13:00 | 63,019 |
+| 14:00 | 53,251 |
+| 15:00 | 44,790 |
+| 16:00 | 23,715 |
+| 17:00 | 12,941 |
+| 18:00 | 2,895 |
 | 19:00 | 3,233 |
 | 20:00 | 778 |
 
