@@ -181,21 +181,14 @@ st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sk
 
 with st.expander("Methodology, Sliders, & Operational Boundaries (MVP Framework)"):
     st.markdown("""
-    * **Why Poisson?** It only needs a single number (the average sales
-      rate) to work, making it usable even for low-volume products where
-      more data-hungry models would be unreliable.
-    * **Purpose of sliders:** these let you simulate different real-world
-      conditions - a busier or quieter product, a longer or shorter
-      silence, a stricter or looser alert threshold - so you can see how
-      the model's judgement responds, without needing live data.
-    * **Simulation safeguard:** the shelf location and revenue figures
-      below are entirely simulated for demonstration purposes and do not
-      represent live production data.
+    * **Purpose of sliders:** These let you simulate different real-world conditions—a busier or quieter product, a longer or shorter silence, a stricter or looser alert threshold—so you can see how the model's judgement dynamically responds to changing store conditions without needing live data connections.
+    * **Why Poisson?** It only needs a single number (the average sales rate) to work, making it usable even for low-volume products where more data-hungry models would be unreliable.
+    * **Simulation safeguard:** The shelf location and revenue figures below are entirely simulated for demonstration purposes and do not represent live production data.
     """)
 
 st.markdown("---")
 
-# --- Top-level metrics: the only place these numbers are stated ---
+# --- Top-level metrics ---
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
@@ -212,22 +205,20 @@ st.markdown("### Anomaly Assessment")
 if is_critical:
     st.error(f"""
     ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
-    **Action Required:** verify the item at its location.
+    **Action Required:** Verify the item at its location immediately.
     """)
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** sales are unusually slow but still within marginal statistical variance.
-    Worth monitoring before checking item location.
+    **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring before dispatching staff.
     """)
 else:
     st.success(f"""
     ### STATUS NORMAL ({phantom_stock_confidence:.1f}% Anomaly Confidence)
-    **Observation:** this sales gap falls within expected normal variance. No action required.
+    **Observation:** This sales gap falls within expected normal variance. No action required.
     """)
 
-# --- Action card: only appears when the item is flagged, and each fact  ---
-# --- (location, revenue) is stated exactly once, in one place.          ---
+# --- Action card: only appears when the item is flagged ---
 if is_flagged:
     st.markdown("---")
     st.markdown("### Recommended Action *(simulated demo output)*")
@@ -239,8 +230,8 @@ if is_flagged:
 
     action_col1, action_col2 = st.columns(2)
     with action_col1:
-        st.metric("Where to Check", get_mock_shelf_location(selected_sku))
+        st.metric("Where to Check (simulated)", get_mock_shelf_location(selected_sku))
     with action_col2:
-        st.metric("Potential Missed Revenue", f"£{simulated_missed_revenue:.2f}")
+        st.metric("Potential Missed Revenue (simulated)", f"£{simulated_missed_revenue:.2f}")
 
 st.markdown("---")
