@@ -93,7 +93,7 @@ def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) ->
     }
 
 
-# SECTION 3: SIMULATED OPERATIONAL DETAILS (MOCK DATA)
+# SIMULATED OPERATIONAL DETAILS (MOCK DATA)
 
 def get_mock_shelf_location(sku: str) -> str:
     """Generate a consistent, fake aisle/shelf reference for a given SKU."""
@@ -110,7 +110,7 @@ def get_mock_unit_price(sku: str) -> float:
 
 
 
-# SECTION 4: APP LAYOUT & CONTROL FLOW
+# APP LAYOUT & CONTROL FLOW
 
 full_catalog = load_catalog(DATA_FILE)
 
@@ -161,7 +161,7 @@ confidence_threshold = st.sidebar.slider(
     key="sensitivity_slider",
 )
 
-# --- Model calculations (done once, reused everywhere below) ---
+# Model calculations (done once, reused everywhere below)
 result = compute_anomaly_confidence(normal_velocity, hours_zero_sales)
 expected_sales_in_window = result["expected_sales"]
 phantom_stock_confidence = result["anomaly_confidence"]
@@ -172,20 +172,21 @@ is_critical = phantom_stock_confidence >= confidence_threshold
 mock_price = get_mock_unit_price(selected_sku)
 simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged else 0.0
 
-# --- UI Header ---
+# UI Header
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
 
 with st.expander("Methodology, Sliders, & Operational Boundaries (MVP Framework)"):
+    with st.expander("ℹ️ About this Dashboard"):
     st.markdown("""
-    * **Purpose of sliders:** These let you simulate different real-world conditions—a busier or quieter product, a longer or shorter silence, a stricter or looser alert threshold—so you can see how the model's judgement dynamically responds to changing store conditions without needing live data connections.
-    * **Why Poisson?** It only needs a single number (the average sales rate) to work, making it usable even for low-volume products where more data-hungry models would be unreliable.
-    * **Simulation safeguard:** The shelf location and revenue figures below are entirely simulated for demonstration purposes and do not represent live production data.
-    """)
+**Purpose:** This dashboard helps retailers identify products that are likely missing from the shop floor, even when the inventory system still shows them as being in stock.
+**How it works:** It compares each product's normal sales pattern with its current sales activity. If a product stops selling for longer than expected, the system estimates the likelihood that it has become phantom stock and prioritises it for investigation.
+**Try it:** Use the controls in the sidebar to change the expected sales rate, hours without sales, and alert sensitivity to see how the risk level changes in real time.
+""")
 
 st.markdown("---")
 
-# --- Top-level metrics ---
+# Top-level metrics
 col1, col2, col3 = st.columns(3)
 with col1:
     st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
@@ -196,7 +197,7 @@ with col3:
 
 st.markdown("---")
 
-# --- Anomaly Assessment ---
+# Anomaly Assessment 
 st.markdown("### Anomaly Assessment")
 
 if is_critical:
@@ -215,7 +216,7 @@ else:
     **Observation:** This sales gap falls within expected normal variance. No action required.
     """)
 
-# --- Action card: only appears when the item is flagged ---
+# Action card only appears when the item is flagged
 if is_flagged:
     st.markdown("---")
     st.markdown("### Recommended Action *(simulated demo output)*")
