@@ -176,9 +176,8 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 st.title("Inventory Intelligence Dashboard")
 st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
 
-with st.expander("Methodology, Sliders, & Operational Boundaries (MVP Framework)"):
-    with st.expander("ℹ️ About this Dashboard"):
-    st.markdown("""
+with st.expander("About this Dashboard"):
+     st.markdown("""
 **Purpose:** This dashboard helps retailers identify products that are likely missing from the shop floor, even when the inventory system still shows them as being in stock.
 **How it works:** It compares each product's normal sales pattern with its current sales activity. If a product stops selling for longer than expected, the system estimates the likelihood that it has become phantom stock and prioritises it for investigation.
 **Try it:** Use the controls in the sidebar to change the expected sales rate, hours without sales, and alert sensitivity to see how the risk level changes in real time.
