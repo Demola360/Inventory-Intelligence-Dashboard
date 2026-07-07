@@ -194,7 +194,7 @@ with col1:
 with col2:
     st.metric("Time Without Sale", f"{hours_zero_sales} hours")
 with col3:
-    st.metric("Expected Sales (in window)", f"{expected_sales_in_window:.1f} units")
+    st.metric("Expected Sales", f"{expected_sales_in_window:.1f} units")
 
 st.markdown("---")
 
@@ -220,7 +220,7 @@ else:
 # Action card only appears when the item is flagged
 if is_flagged:
     st.markdown("---")
-    st.markdown("### Recommended Action *(simulated demo output)*")
+    st.markdown("### Recommended Action")
     st.caption(
         "Shelf location and revenue figures below are simulated for "
         "demonstration purposes and are not connected to a real warehouse, "
