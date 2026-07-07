@@ -118,7 +118,7 @@ if not full_catalog:
     st.stop()
 
 st.sidebar.header("Simulation Controls")
-show_all = st.sidebar.checkbox("Explore Full Catalogue")
+show_all = st.sidebar.checkbox("View all Products")
 
 sku_catalog = full_catalog if show_all else CURATED_SKUS
 
