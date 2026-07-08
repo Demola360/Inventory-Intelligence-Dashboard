@@ -125,7 +125,7 @@ selected_sku = st.sidebar.selectbox(
     "Select Target Product",
     options=list(sku_catalog.keys()),
     index=min(4, len(sku_catalog) - 1),
-    format_func=lambda x: f"{x} — {sku_catalog[x]['Description']}",
+    format_func=lambda x: f"{sku_catalog[x]['Description']} ({x})",
 )
 
 default_velocity = sku_catalog[selected_sku]["Calculated_Velocity"]
@@ -182,13 +182,20 @@ st.markdown(
 )
 
 # --- Plain-language walkthrough, visible by default (not hidden in an expander) ---
+# The closing line reacts to the actual verdict (is_flagged, calculated above) so a
+# small, genuinely normal gap doesn't get described with the same alarming language
+# as a large, genuinely suspicious one.
+if is_flagged:
+    plain_verdict = "That's a meaningful gap for this product — enough to be worth flagging."
+else:
+    plain_verdict = "For how slowly this product normally sells, that small a gap is still well within normal — no cause for concern."
+
 st.info(
-    f"**In plain terms:** `{selected_sku}` ({product_desc}) normally sells about "
+    f"**In plain terms:** **{product_desc}** (`{selected_sku}`) normally sells about "
     f"**{normal_velocity:.1f} units every hour**. It's been **{hours_zero_sales} hours** "
     f"since it last sold anything. Based on its normal pace, we'd have expected roughly "
     f"**{expected_sales_in_window:.1f} units** to have sold by now — but the actual count "
-    f"is **zero**. The bigger that gap between 'expected' and 'zero,' the more suspicious "
-    f"the silence is."
+    f"is **zero**. {plain_verdict}"
 )
 
 with st.expander("How does the model decide what's suspicious?"):
