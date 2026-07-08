@@ -177,7 +177,7 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 # UI Header
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "The system instantly pinpoints suspected out-of-stock items, allowing staff to"
+    "The system instantly pinpoints suspected out-of-stock items, allowing staff to "
     "fix shelf gaps without performing tedious, store-wide audits."
 )
 
