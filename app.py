@@ -177,14 +177,10 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 # UI Header
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "Spot products that are likely missing from the shelf — before staff have to "
-    "manually check every slow-moving item."
+    "The system instantly pinpoints suspected out-of-stock items, allowing staff to"
+    "fix shelf gaps without performing tedious, store-wide audits."
 )
 
-# --- Plain-language walkthrough, visible by default (not hidden in an expander) ---
-# The closing line reacts to the actual verdict (is_flagged, calculated above) so a
-# small, genuinely normal gap doesn't get described with the same alarming language
-# as a large, genuinely suspicious one.
 if is_flagged:
     plain_verdict = "That is a significant period of no sale for this product."
 else:
