@@ -150,7 +150,7 @@ hours_zero_sales = st.sidebar.slider(
     value=3,
     step=1,
     key=f"hrs_{selected_sku}",
-    help="How many hours it's been since this product last sold. Drag this up to simulate a longer silence.",
+    help="How many hours it's been since this product last sold. Drag this up to simulate longer hours.",
 )
 
 confidence_threshold = st.sidebar.slider(
@@ -186,26 +186,26 @@ st.markdown(
 # small, genuinely normal gap doesn't get described with the same alarming language
 # as a large, genuinely suspicious one.
 if is_flagged:
-    plain_verdict = "That's a meaningful gap for this product — enough to be worth flagging."
+    plain_verdict = "That is a significant period of no sale for this product."
 else:
-    plain_verdict = "For how slowly this product normally sells, that small a gap is still well within normal — no cause for concern."
+    plain_verdict = "For how slowly this product normally sells, the period of no sale is still well within normal."
 
 st.info(
-    f"**In plain terms:** **{product_desc}** (`{selected_sku}`) normally sells about "
+    f"**Verdict:** **{product_desc}** (`{selected_sku}`) normally sells about "
     f"**{normal_velocity:.1f} units every hour**. It's been **{hours_zero_sales} hours** "
-    f"since it last sold anything. Based on its normal pace, we'd have expected roughly "
-    f"**{expected_sales_in_window:.1f} units** to have sold by now — but the actual count "
+    f"since it last sold anything. Based on its normal pace,we should have sold approximately "
+    f"**{expected_sales_in_window:.1f} units** but the actual units sold "
     f"is **zero**. {plain_verdict}"
 )
 
-with st.expander("How does the model decide what's suspicious?"):
+with st.expander("How does the model decide what is suspicious?"):
     st.markdown("""
-The dashboard uses a well-established statistical method (the **Poisson distribution**) to
-answer one question: *"if this product really is selling normally, how likely is it that we'd
-genuinely see zero sales for this many hours?"*
+The dashboard uses a statistical method (the **Poisson distribution**) to
+answer one question: *"if this product really is selling normally, how likely is it that we will
+genuinely not record a sale for this many hours?"*
 
-- If that's **very unlikely** → the silence probably isn't a normal quiet spell, so the item gets flagged.
-- If that's **not unlikely at all** → the silence is well within normal variation, so no action is needed.
+- If the product would almost never go this long without selling, then something is probably wrong, and it gets flagged.
+- If the product usually goes this long without selling, then it is normal and action is needed.
 
 That likelihood is converted into a simple confidence score (e.g. *"97% confidence something is wrong"*)
 so it's easy to act on without needing to understand the statistics behind it.
@@ -238,7 +238,7 @@ if is_critical:
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
-    **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring before dispatching staff.
+    **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring.
     """)
 else:
     st.success(f"""
