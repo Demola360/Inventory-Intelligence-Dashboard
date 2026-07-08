@@ -201,12 +201,12 @@ answer one question: *"if this product really is selling normally, how likely is
 genuinely not record a sale for this many hours?"*
 
 - If the product would almost never go this long without selling, then something is probably wrong, and it gets flagged.
-- If the product usually goes this long without selling, then it is normal and action is needed.
+- If the product usually goes this long without selling, then it is normal and no action is needed.
 
 That likelihood is converted into a simple confidence score (e.g. *"97% confidence something is wrong"*)
 so it's easy to act on without needing to understand the statistics behind it.
 
-**Try it:** use the sliders in the sidebar to change the sales rate, the length of the silence, or
+**Try it:** use the sliders in the sidebar to change the sales rate, hours without sale, or
 how sensitive the alert is, and watch the assessment below update in real time.
     """)
 
