@@ -109,7 +109,6 @@ def get_mock_unit_price(sku: str) -> float:
     return float((int(sku_digits) % 135 + 15) / 10)
 
 
-
 # APP LAYOUT & CONTROL FLOW
 
 full_catalog = load_catalog(DATA_FILE)
@@ -141,6 +140,7 @@ normal_velocity = st.sidebar.slider(
     value=float(default_velocity),
     step=0.1,
     key=f"vel_{selected_sku}",
+    help="How fast this product normally sells. Higher = a faster-moving product.",
 )
 
 hours_zero_sales = st.sidebar.slider(
@@ -150,6 +150,7 @@ hours_zero_sales = st.sidebar.slider(
     value=3,
     step=1,
     key=f"hrs_{selected_sku}",
+    help="How many hours it's been since this product last sold. Drag this up to simulate a longer silence.",
 )
 
 confidence_threshold = st.sidebar.slider(
@@ -159,6 +160,7 @@ confidence_threshold = st.sidebar.slider(
     value=95,
     step=1,
     key="sensitivity_slider",
+    help="How sure the model needs to be before it raises a CRITICAL alert. Lower = more alerts, higher = fewer but more certain ones.",
 )
 
 # Model calculations (done once, reused everywhere below)
@@ -174,31 +176,51 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 
 # UI Header
 st.title("Inventory Intelligence Dashboard")
-st.markdown(f"**Analyzing Core Inventory Stream** | Selected Item: `{selected_sku}` - *{product_desc}*")
+st.markdown(
+    "Spot products that are likely missing from the shelf — before staff have to "
+    "manually check every slow-moving item."
+)
 
-with st.expander("About this Dashboard"):
-     st.markdown("""
-**Purpose:** This dashboard helps retailers identify products that are likely missing from the shop floor, even when the inventory system still shows them as being in stock.
+# --- Plain-language walkthrough, visible by default (not hidden in an expander) ---
+st.info(
+    f"**In plain terms:** `{selected_sku}` ({product_desc}) normally sells about "
+    f"**{normal_velocity:.1f} units every hour**. It's been **{hours_zero_sales} hours** "
+    f"since it last sold anything. Based on its normal pace, we'd have expected roughly "
+    f"**{expected_sales_in_window:.1f} units** to have sold by now — but the actual count "
+    f"is **zero**. The bigger that gap between 'expected' and 'zero,' the more suspicious "
+    f"the silence is."
+)
 
-**How it works:** It compares each product's normal sales pattern with its current sales activity. If a product stops selling for longer than expected, the system estimates the likelihood that it has become phantom stock and prioritises it for investigation.
+with st.expander("How does the model decide what's suspicious?"):
+    st.markdown("""
+The dashboard uses a well-established statistical method (the **Poisson distribution**) to
+answer one question: *"if this product really is selling normally, how likely is it that we'd
+genuinely see zero sales for this many hours?"*
 
-**Try it:** Use the controls in the sidebar to change the expected sales rate, hours without sales, and alert sensitivity to see how the risk level changes in real time.
-""")
+- If that's **very unlikely** → the silence probably isn't a normal quiet spell, so the item gets flagged.
+- If that's **not unlikely at all** → the silence is well within normal variation, so no action is needed.
+
+That likelihood is converted into a simple confidence score (e.g. *"97% confidence something is wrong"*)
+so it's easy to act on without needing to understand the statistics behind it.
+
+**Try it:** use the sliders in the sidebar to change the sales rate, the length of the silence, or
+how sensitive the alert is, and watch the assessment below update in real time.
+    """)
 
 st.markdown("---")
 
 # Top-level metrics
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
+    st.metric("Normal Sales Rate", f"{normal_velocity:.2f} units/hr")
 with col2:
-    st.metric("Time Without Sale", f"{hours_zero_sales} hours")
+    st.metric("Hours Since Last Sale", f"{hours_zero_sales} hours")
 with col3:
-    st.metric("Expected Sales", f"{expected_sales_in_window:.1f} units")
+    st.metric("Sales We'd Expect By Now", f"{expected_sales_in_window:.1f} units")
 
 st.markdown("---")
 
-# Anomaly Assessment 
+# Anomaly Assessment
 st.markdown("### Anomaly Assessment")
 
 if is_critical:
