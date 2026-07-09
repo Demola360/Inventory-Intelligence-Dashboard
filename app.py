@@ -184,11 +184,11 @@ st.markdown(
 if is_flagged:
     plain_verdict = "That is a significant period of no sale for this product."
 else:
-    plain_verdict = "For how slowly this product normally sells, the period of no sale is still well within normal."
+    plain_verdict = "For how slowly this product normally sells, the period of no sale is normal."
 
 st.info(
     f"**The product ** **{product_desc}** (`{selected_sku}`) usually sells about "
-    f"**{normal_velocity:.1f} units every hour**and it has been **{hours_zero_sales} hours** "
+    f"**{normal_velocity:.1f} units every hour** and it has been **{hours_zero_sales} hours** "
     f"since it last sold anything. Based on its historical sales data, we should have sold approximately "
     f"**{expected_sales_in_window:.1f} units** but the actual units sold "
     f"is **zero**. {plain_verdict}"
