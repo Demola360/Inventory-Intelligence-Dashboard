@@ -2,16 +2,16 @@
 Inventory Intelligence Dashboard
 ---------------------------------
 WHAT THIS APP DOES:
-A store's till system knows exactly what SHOULD be selling. If a normally
+A store's till system knows exactly what should be selling. If a normally
 fast-moving product suddenly stops selling for several hours, that's often
 a sign it's not actually on the shelf anymore (misplaced, damaged, stolen,
-or a listing error) - even though the computer still says it's in stock.
+or a listing error) - even though the computer still says it is in stock.
 This is called "phantom inventory".
 
 Rather than making a staff member manually check every slow product, this
 tool uses a statistical model (Poisson distribution) to work out how
-UNUSUAL a sales gap really is for that specific product, and only flags
-the ones worth a human going to check.
+unusual a sales gap really is for that specific product, and only flags
+the products worth investigating.
 
 NOTE ON DATA: the underlying dataset is a UK-filtered subset of a public
 online retail dataset, deliberately repurposed here to simulate a single
@@ -187,9 +187,9 @@ else:
     plain_verdict = "For how slowly this product normally sells, the period of no sale is still well within normal."
 
 st.info(
-    f"**Verdict:** **{product_desc}** (`{selected_sku}`) normally sells about "
-    f"**{normal_velocity:.1f} units every hour**. It's been **{hours_zero_sales} hours** "
-    f"since it last sold anything. Based on its normal pace,we should have sold approximately "
+    f"**The product ** **{product_desc}** (`{selected_sku}`) usually sells about "
+    f"**{normal_velocity:.1f} units every hour**and it has been **{hours_zero_sales} hours** "
+    f"since it last sold anything. Based on its historical sales data, we should have sold approximately "
     f"**{expected_sales_in_window:.1f} units** but the actual units sold "
     f"is **zero**. {plain_verdict}"
 )
