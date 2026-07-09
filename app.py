@@ -219,7 +219,7 @@ with col1:
 with col2:
     st.metric("Hours Since Last Sale", f"{hours_zero_sales} hours")
 with col3:
-    st.metric("Sales We'd Expect By Now", f"{expected_sales_in_window:.1f} units")
+    st.metric("Expected Sale in this Window", f"{expected_sales_in_window:.1f} units")
 
 st.markdown("---")
 
