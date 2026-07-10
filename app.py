@@ -30,6 +30,7 @@ physical branch. See README for full details on this design choice.
 # ---------------------------------------------------------------------------
 import streamlit as st
 import pandas as pd
+import scipy.stats as stats
 from scipy.stats import poisson
 import hashlib
 
@@ -307,28 +308,29 @@ st.markdown(
 )
 
 # --- Plain-language walkthrough, visible by default (not hidden in an expander) ---
-# The closing line reacts to the actual verdict (is_flagged, calculated above) so a
-# small, genuinely normal gap doesn't get described with the same alarming language
-# as a large, genuinely suspicious one.
-if is_flagged:
-    plain_verdict = "That gap is large enough to warrant a check."
+# Dynamically generates the descriptive narrative depending on the critical threshold
+# state instead of printing raw values and calculation fields.
+if is_critical:
+    narrative_text = (
+        f"**{product_desc} ({selected_sku})** has been inactive for **{hours_zero_sales} hours**. "
+        f"Based on its usual sales pattern, this is longer than expected and may indicate a stock issue. "
+        f"A quick shelf check is recommended."
+    )
+elif is_flagged:
+    narrative_text = (
+        f"**{product_desc} ({selected_sku})** has not sold in the last **{hours_zero_sales} hours**, "
+        f"despite usually selling around {normal_velocity:.0f} unit{'s' if normal_velocity >= 1.5 or normal_velocity < 0.5 else ''} per hour. "
+        f"At this sales rate, we would normally expect some activity by now. Consider checking the shelf availability or inventory records."
+    )
 else:
-    plain_verdict = "That gap is within the normal range for this product's sales pace."
+    narrative_text = (
+        f"**{product_desc} ({selected_sku})** has had no sales in the last **{hours_zero_sales} hours**. "
+        f"This is not unusual — the product typically sells slowly, so a short period without sales is expected. "
+        f"No action is recommended at this time."
+    )
 
-actual_sales = 0  # by definition: this window is measured as hours since the LAST sale
-
-# An f-string (the "f" before the quotation marks) lets Python values be
-# inserted directly into a piece of text — e.g. {selected_sku} is replaced
-# with the actual SKU code when this line runs. This is used throughout
-# the app to build sentences and labels that update live as the user
-# changes the sliders.
-st.info(
-    f"**In plain terms:** **{product_desc}** (`{selected_sku}`) normally sells about "
-    f"**{normal_velocity:.1f} units every hour**. It's been **{hours_zero_sales} hours** "
-    f"since it last sold anything. Based on its normal pace, we'd have expected roughly "
-    f"**{expected_sales_in_window:.1f} units** to have sold by now — but the actual count "
-    f"is **{actual_sales}**. {plain_verdict}"
-)
+# Render the dynamic plain-language narrative box
+st.info(narrative_text)
 
 # st.expander creates a collapsible section — closed by default, so it
 # doesn't overwhelm the page, but still available to anyone who wants the
