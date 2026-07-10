@@ -303,8 +303,8 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 # --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "Spot products that are likely missing from the shelf — before staff have to "
-    "manually check every slow-moving item."
+    "An intelligent inventory monitoring tool that identifies products with unusual"
+    "sales inactivity and prioritises them for investigation."
 )
 
 # --- Plain-language walkthrough, visible by default (not hidden in an expander) ---
