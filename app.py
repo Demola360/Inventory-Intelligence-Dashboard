@@ -325,7 +325,7 @@ elif is_flagged:
 else:
     narrative_text = (
         f"**{product_desc} ({selected_sku})** has had no sales in the last **{hours_zero_sales} hours**. "
-        f"This is not unusual — the product typically sells slowly, so a short period without sales is expected. "
+        f"This is not unusual because the product typically sells slowly, so a short period without sales is expected. "
         f"No action is recommended at this time."
     )
 
