@@ -212,8 +212,8 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 # --- UI Header ---
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "An intelligent inventory monitoring tool that identifies products with unusual"
-    " sales inactivity and prioritises them for investigation."
+    "This is an intelligent inventory monitoring tool that identifies products with unusual"
+    " low sales volume and prioritises them for investigation."
 )
 
 # --- Plain-language narrative, translating the stats into a decision ---
