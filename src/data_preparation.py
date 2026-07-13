@@ -188,7 +188,7 @@ print(f"Unique products in output catalog: {len(catalog_df):,}")
 # This is the file the Streamlit dashboard reads at runtime.
 # The original Excel file is never uploaded to GitHub.
 
-output_path = "aggregated_catalog.csv"
+output_path = "../data/aggregated_catalog.csv"
 catalog_df.to_csv(output_path)
 
 print(f"\nSaved {len(catalog_df):,} products to '{output_path}'.")
