@@ -31,7 +31,7 @@ st.set_page_config(
 # =============================================================================
 # SECTION 1: LOADING THE DATA
 # =============================================================================
-DATA_FILE = "aggregated_catalog.csv"
+DATA_FILE = "data/aggregated_catalog.csv"
 
 
 @st.cache_data  # avoids re-reading the CSV from disk on every widget interaction

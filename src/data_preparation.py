@@ -32,11 +32,14 @@ import pandas as pd
 # STEP 1 — LOAD AND INSPECT THE RAW DATA
 # =============================================================================
 # First thing: load the file and look at what we're working with.
+# Raw source: UCI Online Retail Dataset
+# https://archive.ics.uci.edu/dataset/352/online+retail
+# Download "Online Retail.xlsx" and place it in data/raw/ before running this script
 # df.head() shows the first few rows so we can see the structure and spot
 # anything that looks immediately wrong. df.info() gives us column types,
 # row counts, and — crucially — which columns have missing values.
 
-df = pd.read_excel("Online Retail.xlsx")
+df = pd.read_excel("../data/raw/Online Retail.xlsx")
 
 print("\n--- df.head() — first look at the raw data ---")
 print(df.head().to_string())
