@@ -219,7 +219,7 @@ st.markdown(
 # --- Plain-language narrative, translating the stats into a decision ---
 if is_critical:
     narrative_text = (
-        f"**{product_desc} ({selected_sku})** has been inactive for **{hours_zero_sales} hours**. "
+        f"**{product_desc} ({selected_sku})** has not sold in **{hours_zero_sales} hours**. "
         f"Based on its usual sales pattern, this is longer than expected and may indicate a stock issue. "
         f"A quick shelf check is recommended."
     )
