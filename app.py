@@ -337,16 +337,12 @@ st.info(narrative_text)
 # fuller explanation of the statistical method behind the headline numbers.
 with st.expander("How does the model decide what's suspicious?"):
     st.markdown("""
-The dashboard uses a well-established statistical method (the **Poisson distribution**) to
-answer one question: *"if this product really is selling normally, how likely is it that we'd
-genuinely see zero sales for this many hours?"*
+The model asks a simple question: based on how fast this product normally sells, how likely is it to genuinely have zero sales this long?
 
-- If a normal product would almost never go this long without selling → something's probably wrong, so it gets flagged.
-- If a normal product could easily go this long without selling → it's just a quiet spell, so no action is needed.
+Very unlikely → flagged as suspicious, since a normal quiet spell wouldn't last this long.
+Quite likely → left alone, since slow-sellers naturally have gaps.
 
-That likelihood is converted into a simple confidence score (e.g. *"97% confidence something is wrong"*)
-so it's easy to act on without needing to understand the statistics behind it.
-
+That likelihood is converted into a single confidence score (e.g. "97% confidence something's wrong"), so staff can act on it without needing to understand the statistics.
 **Try it:** use the sliders in the sidebar to change the sales rate, the length of the silence, or
 how sensitive the alert is, and watch the assessment below update in real time.
     """)
