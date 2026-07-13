@@ -1,3 +1,10 @@
+<img width="681" height="1280" alt="Normal" src="https://github.com/user-attachments/assets/d0c2c87e-1f95-4215-86c9-57ee207a99f5" />
+<img width="679" height="1280" alt="Warning" src="https://github.com/user-attachments/assets/0255a9f1-7369-42a6-9155-a8368c1ee7ce" />
+<img width="678" height="1280" alt="Critical" src="https://github.com/user-attachments/assets/75385cf0-fc3c-468f-ab73-5aa8a4e74f47" />
+
+
+
+
 ## Inventory Intelligence Dashboard
 
 **An early-warning system for "missing" inventory that may not actually be on the shelf.**
