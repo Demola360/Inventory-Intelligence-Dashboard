@@ -39,7 +39,7 @@ import pandas as pd
 # anything that looks immediately wrong. df.info() gives us column types,
 # row counts, and — crucially — which columns have missing values.
 
-df = pd.read_excel("data/raw/Online Retail.xlsx")
+df = pd.read_excel("../data/raw/Online Retail.xlsx")
 
 print("\n--- df.head() — first look at the raw data ---")
 print(df.head().to_string())
