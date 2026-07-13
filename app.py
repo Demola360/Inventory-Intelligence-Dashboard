@@ -339,9 +339,9 @@ with st.expander("How does the model decide what's suspicious?"):
     st.markdown("""
 The model asks a simple question: based on how fast this product normally sells, how likely is it to genuinely have zero sales this long?
 
-Very unlikely → flagged as suspicious, since a normal quiet spell wouldn't last this long.
+Very unlikely → flags as suspicious.
 
-Quite likely → left alone, since slow-sellers naturally have gaps.
+Quite likely → no action required.
 
 That likelihood is converted into a single confidence score (e.g. "97% confidence something's wrong"), so staff can act on it without needing to understand the statistics.
 
