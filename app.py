@@ -272,7 +272,7 @@ hours_zero_sales = st.sidebar.slider(
 )
 
 confidence_threshold = st.sidebar.slider(
-    "Alert Sensitivity (%)",
+    "Confidence Score (%)",
     min_value=80,
     max_value=99,
     value=95,
@@ -345,8 +345,8 @@ Quite likely → left alone, since slow-sellers naturally have gaps.
 
 That likelihood is converted into a single confidence score (e.g. "97% confidence something's wrong"), so staff can act on it without needing to understand the statistics.
 
-**Try it:** use the sliders in the sidebar to change the sales rate, the length of the silence, or
-how sensitive the alert is, and watch the assessment below update in real time.
+**Try it:** use the sliders in the sidebar to change the sales rate, hours without sales, or
+confidence score, and watch the assessment below update in real time.
     """)
 
 st.markdown("---")
