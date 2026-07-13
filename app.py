@@ -340,9 +340,11 @@ with st.expander("How does the model decide what's suspicious?"):
 The model asks a simple question: based on how fast this product normally sells, how likely is it to genuinely have zero sales this long?
 
 Very unlikely → flagged as suspicious, since a normal quiet spell wouldn't last this long.
+
 Quite likely → left alone, since slow-sellers naturally have gaps.
 
 That likelihood is converted into a single confidence score (e.g. "97% confidence something's wrong"), so staff can act on it without needing to understand the statistics.
+
 **Try it:** use the sliders in the sidebar to change the sales rate, the length of the silence, or
 how sensitive the alert is, and watch the assessment below update in real time.
     """)
