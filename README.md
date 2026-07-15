@@ -63,7 +63,7 @@ $$\text{Confidence (\%)} = (1 - P(k=0)) \times 100$$
 
 From the Invoice Date column in the data set, which cointains the hour and the minute of the sale, the hour alone is filtererd out to represent the time of the transaction and then I checked when transactions actually occur in the dataset.
 
-| Hour | Transaction Volume (Simulated) |
+| Hour | Transaction Volume |
 | --- | --- |
 | **06:00** | 1 |
 | **07:00** | 3,798 |
