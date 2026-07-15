@@ -5,6 +5,12 @@
 **Live demo:** https://inventory-intelligence-dashboard.streamlit.app/
 **Dataset:** [UCI Online Retail Dataset](https://archive.ics.uci.edu/dataset/352/online+retail)
 
+![Normal status](assets/screenshots/Normal.png)
+
+![Warning status](assets/screenshots/Warning.png)
+
+![Critical alert](assets/screenshots/Critical.png)
+
 ---
 
 ## The Phantom Inventory Problem
