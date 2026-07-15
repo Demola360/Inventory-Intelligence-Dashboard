@@ -31,13 +31,9 @@ import pandas as pd
 # =============================================================================
 # STEP 1 — LOAD AND INSPECT THE RAW DATA
 # =============================================================================
-# First thing: load the file and look at what we're working with.
 # Raw source: UCI Online Retail Dataset
 # https://archive.ics.uci.edu/dataset/352/online+retail
-# Download "Online Retail.xlsx" and place it in data/raw/ before running this script
-# df.head() shows the first few rows so we can see the structure and spot
-# anything that looks immediately wrong. df.info() gives us column types,
-# row counts, and — crucially — which columns have missing values.
+# Download "Online Retail.xlsx" and place it in data/raw/ before running this script.
 
 df = pd.read_excel("../data/raw/Online Retail.xlsx")
 
@@ -47,59 +43,46 @@ print(df.head().to_string())
 print("\n--- df.info() — column types and missing value counts ---")
 print(df.info())
 
-# What df.info() revealed that needed fixing:
+# df.info() revealed three issues that needed fixing before any analysis:
 #
-#   1. CustomerID is float64 (e.g. 17850.0) — it should be a clean string ('17850').
-#      It arrived as a float because pandas uses NaN to represent missing values,
-#      and NaN is a float type, which forced the whole column into float64.
+#   1. CustomerID arrived as float64 because pandas uses NaN for missing values,
+#      and NaN is a float — forcing the whole column into float64.
 #
-#   2. CustomerID has 135,080 missing values out of 541,909 rows — those rows
-#      have no customer attached to the transaction and cannot be verified as
-#      legitimate sales.
+#   2. 135,080 rows have no CustomerID — unverifiable transactions that
+#      shouldn't count toward a product's sales velocity.
 #
-#   3. There are negative Quantity values in the data — these are cancellations
-#      or returns, not actual sales, and would corrupt velocity calculations.
+#   3. Negative Quantity values are cancellations and returns, not real sales —
+#      leaving them in would artificially deflate velocity calculations.
 
 
 # =============================================================================
 # STEP 2 — CLEAN THE DATA
 # =============================================================================
-# Fixing everything identified above, plus a couple of standard hygiene steps.
-
 print("\n\nCleaning data...")
 
-# Remove exact duplicate rows — can occur when data is exported more than once
 df = df.drop_duplicates()
-
-# Drop rows with no CustomerID — unverifiable transactions
 df = df.dropna(subset=['CustomerID'])
 
-# Remove cancellations and returns (negative or zero quantities)
-# and internal adjustment rows (zero or negative unit price)
+# Exclude cancellations (negative quantity) and internal adjustment rows
+# (zero or negative price) — neither represents a real customer sale.
 df = df[df['Quantity'] > 0]
 df = df[df['UnitPrice'] > 0]
 
-# Parse InvoiceDate properly so we can extract hours and dates later
 df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
 
-# Fix the CustomerID type: float (17850.0) → int (17850) → string ('17850')
-# We can safely cast to int now because we've already dropped all NaN rows
+# Safe to cast to int now — all NaN rows were dropped in the step above.
 df['CustomerID'] = df['CustomerID'].astype(int).astype(str)
 
 
 # =============================================================================
-# STEP 3 — VERIFY THE FIXES WITH A SECOND df.info() CHECK
+# STEP 3 — VERIFY THE FIXES
 # =============================================================================
-# After cleaning, run df.info() again to confirm the issues are resolved.
-# This is how you know the cleaning actually worked rather than just assuming.
+# Running df.info() a second time rather than assuming the cleaning worked.
+# Deliberate check: row count should drop from 541,909 to ~392,692,
+# CustomerID should show no nulls, and dtype should now be object (string).
 
 print("\n--- df.info() after cleaning — verifying fixes ---")
 print(df.info())
-
-# What to confirm here:
-#   - Row count dropped from 541,909 to ~392,692 (missing + invalid rows removed)
-#   - CustomerID is now object dtype (string), no nulls remaining
-#   - Quantity and UnitPrice columns no longer contain negatives or zeros
 
 print(f"\nRows remaining after cleaning: {len(df):,}")
 print(f"CustomerID nulls remaining: {df['CustomerID'].isnull().sum()}")
@@ -109,26 +92,24 @@ print(f"Sample CustomerID value: {df['CustomerID'].iloc[0]}  (no trailing .0)")
 # =============================================================================
 # STEP 4 — FILTER TO UNITED KINGDOM AND RESTRICT TO TRADING HOURS
 # =============================================================================
-# The dataset spans 38 countries. For this project, UK transactions are treated
-# as a single store branch — a deliberate simplification that gives a consistent
-# sales pattern without needing to model cross-country differences.
+# The dataset spans 38 countries. Filtering to UK only lets us treat this
+# as a single consistent store branch without needing to model country-level
+# differences in demand patterns.
 
 print("\n\nFiltering to United Kingdom transactions...")
 df_uk = df[df['Country'] == 'United Kingdom'].copy()
 print(f"UK rows: {len(df_uk):,}")
 
-# Extract the hour from each transaction timestamp
 df_uk['Hour'] = df_uk['InvoiceDate'].dt.hour
 
-# Inspecting the hour distribution (done during exploration) showed that
-# virtually all transactions fall between 6am and 8pm. Records outside
-# that window are likely automated system entries, not real customer sales.
+# Inspecting the hour distribution showed virtually all transactions fall
+# between 6am and 8pm — anything outside that window is almost certainly
+# automated system entries, not real customer purchases.
 #
-# This matters for the Poisson model: velocity = total units / total hours.
-# If 3am counts in the denominator, the rate gets artificially diluted —
-# a product selling 100 units across 14 real trading hours looks like it
-# sold 100 units across 24 hours. Restricting to trading hours keeps
-# the velocity calculation grounded in reality.
+# This filtering decision directly affects the Poisson model's accuracy:
+# velocity = total units / total hours. If 3am counts in the denominator,
+# the rate gets artificially diluted — making a product look slower than
+# it actually is during real trading hours.
 
 print("\nFiltering to trading hours (6am to 8pm)...")
 df_trading = df_uk[
@@ -136,8 +117,8 @@ df_trading = df_uk[
     (df_uk['Hour'] < 20)
 ].copy()
 
-total_trading_days     = df_trading['InvoiceDate'].dt.date.nunique()
-hours_per_trading_day  = 14   # 6am to 8pm = 14 hours
+total_trading_days      = df_trading['InvoiceDate'].dt.date.nunique()
+hours_per_trading_day   = 14   # 6am to 8pm = 14 hours, empirically derived from the data
 total_operational_hours = total_trading_days * hours_per_trading_day
 
 print(f"Unique trading days in dataset: {total_trading_days}")
@@ -147,36 +128,34 @@ print(f"Total operational hours (denominator): {total_operational_hours}")
 # =============================================================================
 # STEP 5 — AGGREGATE TO ONE ROW PER PRODUCT (SKU)
 # =============================================================================
-# The cleaned dataset still has ~350,000 individual transaction rows.
-# The dashboard doesn't need that level of detail — it only needs to know
-# how fast each product sells on average. So we collapse the data to one
-# row per SKU, which reduces the file from 45MB to a few hundred KB.
+# The dashboard only needs one number per product — its average sales rate.
+# Collapsing ~350,000 transaction rows to one row per SKU reduces the file
+# from 45MB to a few hundred KB, making it practical to ship with the app.
 
 print("\n\nAggregating to product-level catalog...")
 
 catalog_df = (
     df_trading.groupby("StockCode")
     .agg(
-        Description=("Description", "first"),  # one description per product
-        Total_Units=("Quantity", "sum")         # total units sold in the full window
+        Description=("Description", "first"),
+        Total_Units=("Quantity", "sum")
     )
 )
 
-# Velocity = how many units this product sells per operational hour on average.
-# This becomes the "normal" baseline the Poisson model compares against.
+# Core velocity formula: units sold ÷ total operational hours.
+# This is the lambda (λ) the Poisson model uses as its "normal" baseline.
 raw_velocity = catalog_df['Total_Units'] / total_operational_hours
 
-# Apply a minimum floor of 0.2 units/hour.
-# A product with a true velocity near zero would essentially never trigger an
-# alert — even 24 hours of silence would look statistically normal. The floor
-# ensures the model stays meaningful for any product that is actually stocked.
+# Floor of 0.2 units/hour applied to very slow-moving products.
+# Without it, a near-zero velocity means the model would never flag that
+# product — even 24 hours of silence would look statistically normal.
+# The floor keeps the anomaly detection meaningful across the full catalogue.
 catalog_df['Calculated_Velocity'] = np.maximum(0.2, raw_velocity)
 
-# Sort fastest to slowest — useful when browsing the full catalog in the dashboard
 catalog_df = catalog_df.sort_values(by='Calculated_Velocity', ascending=False)
 
-# Drop any rows where the description is missing (a small number of
-# system-generated or test SKUs that have no readable product name)
+# Drop SKUs with no readable description — these are system or test entries,
+# not real products a store would stock.
 catalog_df = catalog_df.dropna()
 
 print(f"Unique products in output catalog: {len(catalog_df):,}")
@@ -185,8 +164,8 @@ print(f"Unique products in output catalog: {len(catalog_df):,}")
 # =============================================================================
 # STEP 6 — SAVE THE OUTPUT FILE
 # =============================================================================
-# This is the file the Streamlit dashboard reads at runtime.
-# The original Excel file is never uploaded to GitHub.
+# This is the only file the Streamlit dashboard reads at runtime.
+# The original 45MB Excel file is never committed to GitHub.
 
 output_path = "../data/aggregated_catalog.csv"
 catalog_df.to_csv(output_path)
