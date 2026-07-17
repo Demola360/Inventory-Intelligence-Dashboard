@@ -180,11 +180,11 @@ hours_zero_sales = st.sidebar.slider(
     value=3,
     step=1,
     key=f"hrs_{selected_sku}",
-    help="How many hours it's been since this product last sold. Drag this up to simulate a longer silence.",
+    help="How many hours it's been since this product last sold. Drag this up to simulate a longer period.",
 )
 
 confidence_threshold = st.sidebar.slider(
-    "Confidence Score (%)",
+    "Alert Sensitivity (%)",
     min_value=80,
     max_value=99,
     value=95,
