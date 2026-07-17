@@ -98,9 +98,9 @@ statistics behind it.
 
 ## Key Decisions Made
 
-1. **UK filter:** Filtered and used only the United Kingdom 
-location in the main dataset. This is a repurposed dataset, 
-and the United Kingdom location serves as one branch of a 
+1. **UK filter:** Filtered and used only the transactions from
+the United Kingdom in the main dataset. This is a repurposed
+dataset, and the United Kingdom location serves as one branch of a 
 fictional retail store chain. Without this filter, the 
 single-branch simulation breaks down.
 
