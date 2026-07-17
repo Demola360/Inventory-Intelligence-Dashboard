@@ -55,12 +55,12 @@ Inventory-Intelligence-Dashboard/
 ├── .gitignore
 │
 ├── data/
-│   ├── raw/                       # Place Online Retail.xlsx here
-│   └── aggregated_catalog.csv     # Pre-processed output read by the dashboard
+│   ├── raw/                        # Place Online Retail.xlsx here
+│   └── aggregated_catalog.csv      # Pre-processed output read by the dashboard
 │
 ├── src/
-│   └── data_preparation.py        # Full data pipeline from raw Excel to catalogue CSV
-│
+│   └── data_preparation.py         # Full data pipeline from raw Excel to catalogue CSV
+│    └── exploratory_analysis.ipybn
 └── assets/
     └── screenshots/
         ├── Critical.png
