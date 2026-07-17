@@ -246,7 +246,7 @@ Very unlikely → flags as suspicious.
 
 Quite likely → no action required.
 
-That likelihood is converted into a single confidence score (e.g. "97% confidence something's wrong"), so staff can act on it without needing to understand the statistics.
+That probability is converted into a single  anomaly confidence percentage for proper understanding.
 
 **Try it:** use the sliders in the sidebar to change the sales rate, hours without sales, or
 confidence score, and watch the assessment below update in real time.
