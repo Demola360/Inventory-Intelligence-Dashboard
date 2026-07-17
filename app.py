@@ -267,12 +267,12 @@ st.markdown("### Anomaly Assessment")
 
 if is_critical:
     st.error(f"""
-    ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Confidence)
+    ### CRITICAL: PHANTOM INVENTORY SUSPECTED ({phantom_stock_confidence:.1f}% Anomaly Confidence)
     **Action Required:** Verify the item at its location immediately.
     """)
 elif is_flagged:
     st.warning(f"""
-    ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Confidence)
+    ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Anomaly Confidence)
     **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring before dispatching staff.
     """)
 else:
