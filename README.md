@@ -1,7 +1,7 @@
 ## Inventory Intelligence Dashboard
 
-**An early-warning system for "missing" inventory that 
-may not actually be on the shelf.**
+**This proof-of-concept portfolio project shows how historical sales patterns can be used to identify which products should be prioritised for a physical shelf check. It does not confirm inventory discrepancies on its own. Doing that would require live data from point-of-sale systems, warehouse records and shelf-availability tools, which is outside the scope of this project.
+**
 
 **Live demo:** https://inventory-intelligence-dashboard.streamlit.app/
 **Dataset:** [UCI Online Retail Dataset](https://archive.ics.uci.edu/dataset/352/online+retail)
