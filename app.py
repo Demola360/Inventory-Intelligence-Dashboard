@@ -197,13 +197,18 @@ st.info(narrative_text)
 
 with st.expander("How does the model decide what's suspicious?"):
     st.markdown("""
-The model asks a simple question: based on how fast this product normally sells, how likely is it to genuinely have zero sales this long?
+The model asks a simple question: based on how fast this product normally sells, 
+how likely is it to genuinely have zero sales this long?
 
 Very unlikely → flags as suspicious.
 
 Quite likely → no action required.
 
 That probability is converted into a single anomaly confidence percentage for proper understanding.
+
+**Important distinction:** this score measures how statistically unusual the period of zero sales is, 
+not the probability that stock is physically missing. 
+A high score means "this is worth checking," not "this is confirmed missing."
 
 **Try it:** use the sliders in the sidebar to change the sales rate, hours without sales, or
 confidence score, and watch the assessment below update in real time.
