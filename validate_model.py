@@ -34,7 +34,7 @@ def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.
 
 if __name__ == "__main__":
     # Example: a product that normally sells 2 units/hour.
-    test_velocity = 3.0
+    test_velocity = 0.3
     test_gaps = [1, 2, 3, 4, 6, 8, 12, 24]
 
     results_df = run_synthetic_gap_test(test_velocity, test_gaps)
