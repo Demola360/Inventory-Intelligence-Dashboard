@@ -72,10 +72,15 @@ catalog_df = (
 # velocity = units sold ÷ total operational hours — this is λ for the Poisson model
 raw_velocity = catalog_df['Total_Units'] / total_operational_hours
 
-# Floor at 0.2 — without it, near-zero velocity products would never flag,
-# even after 24 hours of silence. At 0.2, Warning triggers at 9 hours and
-# Critical at 15 hours at 95% sensitivity — within a single working shift.
-catalog_df['Calculated_Velocity'] = np.maximum(0.2, raw_velocity)
+# MINIMUM_MONITORING_VELOCITY is a deliberate business decision, not a
+# statistical necessity: below this rate, a product would take too long
+# to ever trigger a meaningful alert, so we treat it as the floor for
+# monitoring purposes. This is separate from the true observed velocity,
+# which is preserved below for transparency.
+MINIMUM_MONITORING_VELOCITY = 0.2
+
+catalog_df['Observed_Velocity'] = raw_velocity
+catalog_df['Calculated_Velocity'] = np.maximum(MINIMUM_MONITORING_VELOCITY, raw_velocity)
 catalog_df = catalog_df.sort_values(by='Calculated_Velocity', ascending=False)
 catalog_df = catalog_df.dropna()
 
