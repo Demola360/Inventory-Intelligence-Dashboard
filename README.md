@@ -94,7 +94,33 @@ verdict, Normal, Warning, or Critical, so staff can act on it
 without needing to understand the statistics behind it.
 
 ---
+## Model Validation
 
+Since no labelled phantom-inventory events exist for this dataset, the
+model was validated by injecting synthetic sales gaps of increasing length
+for a known product velocity, and confirming the anomaly score rises
+monotonically as the injected silence grows. See `validate_model.py`.
+
+Tested against a product selling 0.3 units/hour on average:
+
+| Injected Period of no Sales (hrs) | Anomaly Score |
+|---|---|
+| 1  | 25.92%  |
+| 2  | 45.12%  |
+| 3  | 59.34%  |
+| 4  | 69.88%  |
+| 6  | 83.47%  |
+| 8  | 90.93%  |
+| 12 | 97.27%  |
+| 24 | 99.93%  |
+
+This confirms the model responds correctly in the direction it should,
+even without real-world ground truth to compare against. Faster-selling
+products reach high anomaly scores much sooner than slow-moving ones,
+which reflects the model judging each product against its own normal
+selling rate rather than applying one flat rule.
+
+---
 ## Key Decisions Made
 
 1. **UK filter:** Filtered and used only the transactions from
