@@ -57,14 +57,11 @@ def load_catalog(filepath: str) -> dict:
 
 # 6 SKUs selected by velocity range so a first-time visitor sees varied product
 # behaviour without scrolling through all 3,645 products
-CURATED_SKUS = {
-    "22439": {"Description": "6 ROCKET BALLON", "Calculated_Velocity": 0.59},
-    "22046": {"Description": "TEA WRAPPING PAPER", "Calculated_Velocity": 0.59},
-    "22713": {"Description": "CARD I LOVE LONDON", "Calculated_Velocity": 1.13},
-    "17003": {"Description": "BROCADE RING PURSE", "Calculated_Velocity": 8.04},
-    "90062": {"Description": "CARNIVAL BRACELET", "Calculated_Velocity": 0.20},
-    "22670": {"Description": "FRENCH WC SIGN BLUE METAL", "Calculated_Velocity": 0.53},
-}
+CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
+# Curated to show a clear example from each alert tier at default settings
+# (3 hours, 95% sensitivity): two Normal, two Warning, two Critical.
+# Values are pulled live from the catalog below, never hardcoded, so they
+# can't drift out of sync if the pipeline is rerun with updated data or logic.
 
 
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
@@ -105,7 +102,12 @@ def get_mock_unit_price(sku: str) -> float:
 
 
 full_catalog = load_catalog(DATA_FILE)
-if not full_catalog:
+CURATED_SKUS = {
+    sku: full_catalog[sku]
+    for sku in CURATED_SKU_IDS
+    if sku in full_catalog
+}
+    if not full_catalog:
     st.stop()  # error already shown in load_catalog()
 
 st.sidebar.header("Simulation Controls")
