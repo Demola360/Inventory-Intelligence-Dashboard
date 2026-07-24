@@ -20,7 +20,7 @@ def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) ->
 
 def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.DataFrame:
     """
-    Injects a range of artificial 'silence' durations for one product's
+    Injects a range of artificial 'no sale' durations for one product's
     known velocity, and records how the anomaly score responds.
     A healthy model should show scores rising monotonically as the
     injected gap grows.
@@ -28,7 +28,7 @@ def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.
     results = []
     for hours in gap_hours_to_test:
         score = compute_anomaly_confidence(velocity, hours)
-        results.append({"Injected_Silence_Hours": hours, "Anomaly_Score": round(score, 2)})
+        results.append({"Injected_no_sale_Hours": hours, "Anomaly_Score": round(score, 2)})
     return pd.DataFrame(results)
 
 
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     # Basic sanity assertion: score must increase as the gap grows.
     scores = results_df["Anomaly_Score"].tolist()
     is_monotonic = all(scores[i] <= scores[i + 1] for i in range(len(scores) - 1))
-    print(f"\nScores rise monotonically with longer silence: {is_monotonic}")
+    print(f"\nScores rise monotonically with longer period_of_no_sale: {is_monotonic}")
