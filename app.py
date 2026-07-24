@@ -2,7 +2,7 @@
 Inventory Intelligence Dashboard
 ---------------------------------
 A retail store's inventory system may say an item is in stock when it
-physically isn't — stolen, misplaced, or damaged. This is phantom inventory.
+physically isn't, stolen, misplaced, or damaged. This is phantom inventory.
 
 This tool uses a Poisson model to work out how unusual a sales gap is for
 a given product, and only flags the ones worth a staff member checking.
@@ -26,7 +26,7 @@ DATA_FILE = "data/aggregated_catalog.csv"
 
 @st.cache_data  # stops the CSV being re-read on every widget interaction
 def load_catalog(filepath: str) -> dict:
-    """Load product catalogue (SKU → description + sales velocity) from CSV."""
+    """Load product catalogue (SKU to description and sales velocity) from CSV."""
     try:
         df = pd.read_csv(filepath)
     except FileNotFoundError:
@@ -47,28 +47,25 @@ def load_catalog(filepath: str) -> dict:
         )
         return {}
 
-    # StockCode as string to avoid silently dropping leading zeros (e.g. "07001" → 7001)
+    # StockCode as string to avoid silently dropping leading zeros (e.g. "07001" becomes 7001)
     df["StockCode"] = df["StockCode"].astype(str)
     catalog_df = df.set_index("StockCode")
 
-    # Dict over DataFrame — the app only ever needs one SKU at a time, O(1) lookup
+    # Dict over DataFrame, the app only ever needs one SKU at a time, O(1) lookup
     return catalog_df.to_dict("index")
-
-
-
 
 
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
     """
     How unusual is it that this product has had zero sales for this long?
-    Pure function — no Streamlit calls, no side effects, so it can be tested independently.
+    Pure function, no Streamlit calls, no side effects, so it can be tested independently.
     """
     expected_sales = velocity * hours_since_last_sale  # lambda for the Poisson model
 
-    # scipy's implementation, not hand-rolled — well tested and peer reviewed
+    # scipy's implementation, not hand-rolled, well tested and peer reviewed
     probability_of_zero_sales = poisson.pmf(0, expected_sales)
 
-    # Flip probability into anomaly confidence — easier for non-technical staff to act on
+    # Flip probability into anomaly confidence, easier for non-technical staff to act on
     anomaly_confidence = (1 - probability_of_zero_sales) * 100
 
     return {
@@ -78,11 +75,11 @@ def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) ->
     }
 
 
-# Mock data only — not connected to any real warehouse, till, or pricing system
+# Mock data only, not connected to any real warehouse, till, or pricing system
 
 def get_mock_shelf_location(sku: str) -> str:
     """Generate a consistent fake shelf reference for a given SKU."""
-    # md5 hash not random — same SKU must always map to the same location across reruns
+    # md5 hash not random, same SKU must always map to the same location across reruns
     hash_val = int(hashlib.md5(str(sku).encode()).hexdigest(), 16)
     return f"Aisle {(hash_val % 24) + 1}, Shelf {chr(65 + (hash_val % 6))}-{(hash_val % 10) + 1}"
 
@@ -94,21 +91,24 @@ def get_mock_unit_price(sku: str) -> float:
         return 4.50
     return float((int(sku_digits) % 135 + 15) / 10)
 
-# 6 SKUs selected by velocity range so a first-time visitor sees varied product
-# behaviour without scrolling through all 3,645 products
-CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
-# Curated to show a clear example from each alert tier at default settings
-# (3 hours, 95% sensitivity): two Normal, two Warning, two Critical.
-# Values are pulled live from the catalog below, never hardcoded, so they
-# can't drift out of sync if the pipeline is rerun with updated data or logic.
+
 full_catalog = load_catalog(DATA_FILE)
 if not full_catalog:
     st.stop()  # error already shown in load_catalog()
+
+# 6 SKUs selected to show a clear example from each alert tier at default
+# settings (3 hours, 95% sensitivity): two Normal, two Warning, two Critical,
+# so a first-time visitor sees the full range of outcomes without scrolling
+# through all 3,645 products. Values are pulled live from the catalog below,
+# never hardcoded, so they can't drift out of sync if the pipeline is rerun
+# with updated data or logic.
+CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
 CURATED_SKUS = {
     sku: full_catalog[sku]
     for sku in CURATED_SKU_IDS
     if sku in full_catalog
 }
+
 st.sidebar.header("Simulation Controls")
 
 show_all = st.sidebar.checkbox("View all Products")
@@ -161,12 +161,12 @@ result = compute_anomaly_confidence(normal_velocity, hours_zero_sales)
 expected_sales_in_window = result["expected_sales"]
 phantom_stock_confidence = result["anomaly_confidence"]
 
-# Warning fires 15 points below Critical — a watch tier before action is required
+# Warning fires 15 points below Critical, a watch tier before action is required
 is_flagged = phantom_stock_confidence >= (confidence_threshold - 15)
 is_critical = phantom_stock_confidence >= confidence_threshold
 
 mock_price = get_mock_unit_price(selected_sku)
-# Revenue only shown when item is flagged — a normal item gets no revenue figure at all
+# Revenue only shown when item is flagged, a normal item gets no revenue figure at all
 simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged else 0.0
 
 st.title("Inventory Intelligence Dashboard")
@@ -198,17 +198,17 @@ st.info(narrative_text)
 
 with st.expander("How does the model decide what's suspicious?"):
     st.markdown("""
-The model asks a simple question: based on how fast this product normally sells, 
+The model asks a simple question: based on how fast this product normally sells,
 how likely is it to genuinely have zero sales this long?
 
-Very unlikely → flags as suspicious.
+Very unlikely, flags as suspicious.
 
-Quite likely → no action required.
+Quite likely, no action required.
 
 That probability is converted into a single anomaly confidence percentage for proper understanding.
 
-**Important distinction:** this score measures how statistically unusual the period of zero sales is, 
-not the probability that stock is physically missing. 
+**Important distinction:** this score measures how statistically unusual the period of zero sales is,
+not the probability that stock is physically missing.
 A high score means "this is worth checking," not "this is confirmed missing."
 
 **Try it:** use the sliders in the sidebar to change the sales rate, hours without sales, or
@@ -229,7 +229,7 @@ st.markdown("---")
 st.markdown("### Anomaly Assessment")
 
 if is_critical:
-   st.error(f"""
+    st.error(f"""
 ### CRITICAL: HIGH SHELF-CHECK PRIORITY ({phantom_stock_confidence:.1f}% Anomaly Score)
 **What this means:** it is statistically unusual for this product to have zero sales this long, given its normal rate. This flags it as worth a physical check, it does not confirm stock is missing.
 **Action Required:** Verify the item at its location immediately.
