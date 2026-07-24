@@ -83,15 +83,15 @@ historically sells per hour.
 
 **λ = Sales Velocity × Hours**
 
-The output is the probability of zero sales. The dashboard 
-converts this into an anomaly confidence score, which flips 
-the probability for better understanding. For example, if 
-the model says there is a 5% chance that the period of no 
-sales is normal, the anomaly confidence says there is a 95% 
-chance that this product needs to be investigated. The result 
-is a colour-coded verdict — Normal, Warning, or Critical — 
-so staff can act on it without needing to understand the 
-statistics behind it.
+The output is the probability of zero sales. The dashboard converts 
+this into an anomaly score, which flips the probability so it is 
+easier to understand. For example, if the model says there is a 5% 
+chance that the period of no sales is normal, the anomaly score is 
+95%, meaning this length of no sales is statistically unusual and 
+worth checking. This does not confirm stock is missing, it flags 
+the item as worth a physical check. The result is a colour coded 
+verdict, Normal, Warning, or Critical, so staff can act on it 
+without needing to understand the statistics behind it.
 
 ---
 
