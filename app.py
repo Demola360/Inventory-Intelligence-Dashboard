@@ -13,8 +13,8 @@ deliberately repurposed to simulate a single physical branch.
 
 import streamlit as st
 import pandas as pd
-from scipy.stats import poisson
 import hashlib
+from model import compute_anomaly_confidence
 
 st.set_page_config(
     page_title="Inventory Intelligence Dashboard",
@@ -53,27 +53,6 @@ def load_catalog(filepath: str) -> dict:
 
     # Dict over DataFrame, the app only ever needs one SKU at a time, O(1) lookup
     return catalog_df.to_dict("index")
-
-
-def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> dict:
-    """
-    How unusual is it that this product has had zero sales for this long?
-    Pure function, no Streamlit calls, no side effects, so it can be tested independently.
-    """
-    expected_sales = velocity * hours_since_last_sale  # lambda for the Poisson model
-
-    # scipy's implementation, not hand-rolled, well tested and peer reviewed
-    probability_of_zero_sales = poisson.pmf(0, expected_sales)
-
-    # Flip probability into anomaly confidence, easier for non-technical staff to act on
-    anomaly_confidence = (1 - probability_of_zero_sales) * 100
-
-    return {
-        "expected_sales": expected_sales,
-        "probability_of_zero_sales": probability_of_zero_sales,
-        "anomaly_confidence": anomaly_confidence,
-    }
-
 
 # Mock data only, not connected to any real warehouse, till, or pricing system
 
