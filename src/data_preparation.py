@@ -53,6 +53,12 @@ df_trading = df_uk[
     (df_uk['Hour'] < 20)
 ].copy()
 
+# Some stock codes in this dataset are administrative entries, not real
+# shelf products (postage, bank charges, manual adjustments). These
+# shouldn't appear in a shelf-check tool, so they're excluded here.
+NON_PRODUCT_CODES = ['POST', 'BANK CHARGES', 'DOT', 'D', 'M', 'C2', 'PADS', 'CRUK']
+df_trading = df_trading[~df_trading['StockCode'].isin(NON_PRODUCT_CODES)].copy()
+
 total_trading_days = df_trading['InvoiceDate'].dt.date.nunique()
 total_operational_hours = total_trading_days * 14  # 14-hour window
 
