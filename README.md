@@ -1,9 +1,11 @@
 ## Inventory Intelligence Dashboard
 
-**This proof-of-concept portfolio project shows how historical sales patterns can be used to identify which products should be prioritised for a physical shelf check. It does not confirm inventory discrepancies on its own. Doing that would require live data from point-of-sale systems, warehouse records and shelf-availability tools, which is outside the scope of this project.**
+**A proof-of-concept dashboard that flags products worth a physical shelf check, using statistical anomaly detection instead of manual floor walks.**
 
 **Live demo:** https://inventory-intelligence-dashboard.streamlit.app/
 **Dataset:** [UCI Online Retail Dataset](https://archive.ics.uci.edu/dataset/352/online+retail)
+
+This project shows how historical sales patterns can be used to identify which products should be prioritised for a physical shelf check. It does not confirm inventory discrepancies on its own, doing that would require live data from point-of-sale systems, warehouse records, and shelf-availability tools, which is outside the scope of this project.
 
 ---
 
@@ -15,182 +17,39 @@
 
 ![Warning status](assets/screenshots/Warning.png)
 
-**Normal:** Even after 3 hours of no sales, this product's 
-status is normal. When the sales gap falls within expected 
-variance, the system raises no alert — avoiding unnecessary 
-staff intervention.
+**Normal:** Even after 3 hours of no sales, this product's status is normal.
 
 ![Normal status](assets/screenshots/Normal.png)
 
 ---
 
-## The Phantom Inventory Problem
+## The problem
 
-A retail store's inventory system may record an item as 
-available, even though it is physically absent in the store 
-or warehouse due to theft, misplacement, or damage. This 
-situation is called the 'Phantom Inventory Problem,' and 
-this dashboard addresses it.
+A retail store's inventory system may record an item as available even though it's physically absent, due to theft, misplacement, or damage. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem means lost sales sitting on a shelf nobody can find. This dashboard flags the products statistically worth checking, instead of checking everything or nothing.
 
-This dashboard uses the historical sales frequency for each 
-item, compares it to the period with no sales for that item, 
-and flags the item for physical inspection if that period is 
-abnormal, prioritising it for a physical shelf check.
+## How it works, in short
 
-This decreases invisible revenue leaks by allowing staff to 
-prioritise inventory checks and correct inventory data errors.
+The dashboard compares each product's normal sales rate to how long it's actually been since its last sale, and calculates how statistically unusual that gap is using a Poisson model. A high score means "worth checking," not "confirmed missing." Full methodology, including the maths and the validation results, is in [docs/methodology.md](docs/methodology.md).
 
----
+## Key decisions
 
-## Repo Structure
+- **UK-filtered subset**, treated as a stand-in for a single store branch
+- **14-hour trading window**, derived empirically from the UK-only hourly transaction data, not assumed
+- **Six curated example products**, spanning Normal, Warning, and Critical at default settings
+- **A monitoring velocity floor**, kept separate from the true observed velocity for transparency
 
-```text
-Inventory-Intelligence-Dashboard/
-│
-├── app.py                         # Streamlit dashboard — entry point
-├── README.md
-├── requirements.txt
-├── LICENSE
-├── .gitignore
-│
-├── data/
-│   ├── raw/                        # Place Online Retail.xlsx here
-│   └── aggregated_catalog.csv      # Pre-processed output read by the dashboard
-│
-├── src/
-│   └── data_preparation.py         # Full data pipeline from raw Excel to catalogue CSV
-│    └── exploratory_analysis.ipybn
-└── assets/
-    └── screenshots/
-        ├── Critical.png
-        ├── Warning.png
-        └── Normal.png
-```
+Full reasoning behind each decision is in [docs/methodology.md](docs/methodology.md).
 
----
+## Limitations
 
-## How the Model Works
+Built on historical averages, not live conditions. No ground-truth validation yet, no feedback loop to confirm real outcomes. Doesn't yet account for seasonality, promotions, or bursty demand. Full limitations list and why they're included on purpose: [docs/limitations.md](docs/limitations.md).
 
-The dashboard asks one question: what is the statistical 
-probability that a product with this historical sales rate 
-will have zero sales over this given period — likely, or 
-due to an inventory problem that needs investigation?
-
-To answer it, the model calculates Lambda (λ) — simply the 
-number of sales expected in a given time frame, all things 
-being equal. Sales Velocity is how many units a product 
-historically sells per hour.
-
-**λ = Sales Velocity × Hours**
-
-The output is the probability of zero sales. The dashboard converts 
-this into an anomaly score, which flips the probability so it is 
-easier to understand. For example, if the model says there is a 5% 
-chance that the period of no sales is normal, the anomaly score is 
-95%, meaning this length of no sales is statistically unusual and 
-worth checking. This does not confirm stock is missing, it flags 
-the item as worth a physical check. The result is a colour coded 
-verdict, Normal, Warning, or Critical, so staff can act on it 
-without needing to understand the statistics behind it.
-
----
-## Model Validation
-
-Since no labelled phantom-inventory events exist for this dataset, the
-model was validated by injecting synthetic sales gaps of increasing length
-for a known product velocity, and confirming the anomaly score rises
-monotonically as the injected silence grows. See `validate_model.py`.
-
-Tested against a product selling 0.3 units/hour on average:
-
-| Injected Period of no Sales (hrs) | Anomaly Score |
-|---|---|
-| 1  | 25.92%  |
-| 2  | 45.12%  |
-| 3  | 59.34%  |
-| 4  | 69.88%  |
-| 6  | 83.47%  |
-| 8  | 90.93%  |
-| 12 | 97.27%  |
-| 24 | 99.93%  |
-
-This confirms the model responds correctly in the direction it should,
-even without real-world ground truth to compare against. Faster-selling
-products reach high anomaly scores much sooner than slow-moving ones,
-which reflects the model judging each product against its own normal
-selling rate rather than applying one flat rule.
-
----
-## Key Decisions Made
-
-1. **UK filter:** Filtered and used only the transactions from
-the United Kingdom in the main dataset. This is a repurposed
-dataset, and the United Kingdom location serves as one branch of a 
-fictional retail store chain. Without this filter, the 
-single-branch simulation breaks down.
-
-2. **14-hour trading window:** I extracted the hours from 
-the invoice date and discovered that transactions peaked at 
-midday with 70,938 transactions and dropped to negligible 
-volume by 20:00 — confirming a 14-hour window rather than 
-assuming one. Without this, the model factors in 10 hours 
-of no transactions and falls flat.
-
-3. **Curated default catalogue:** Curated 6 items with 
-varying velocities to display by default, selected from the 
-dataset to show varying product behaviours. Without this, 
-users would have to scroll through all 3,645 products.
-
-4. **Velocity floor of 0.2:** Some products have very small 
-velocities and will not flag realistically without a floor. 
-At 0.2, a product takes 9 hours to trigger a Warning and 15 
-hours to reach Critical at 95% sensitivity — still within a 
-single working shift. Without this, slow-moving products 
-would require weeks before being flagged for inspection.
-
----
-
-## Real-World Limitations
-
-1. The dataset was chosen deliberately and repurposed to 
-simulate a branch of a physical retail store. This was done 
-to showcase creative storytelling with data, rather than 
-defaulting to a purpose-built demo dataset.
-
-2. Does not account for false positives yet — there is no 
-feedback loop to register real staff check outcomes. This 
-would require staff to log the results of flagged items in 
-a real deployment.
-
-3. The 14-hour sales window does not account for time of 
-day. There is no distinction between products that sell more 
-at a particular time and those that sell less.
-
-4. Does not account for burstiness, where a promotion or 
-viral moment drastically changes the sales velocity for a 
-short period.
-
----
-
-## Tech Stack
+## Tech stack
 
 Python · Streamlit · Pandas · NumPy · SciPy (Poisson)
 
----
+## Read more
 
-## From Proof of Concept to Production
-
-This dashboard was built as a proof of concept using a 
-static historical dataset. A production version would need 
-live point-of-sale data feeding directly into the model, so 
-alerts reflect what is actually happening on the shelf right 
-now rather than what historically should be happening.
-
-It would also need to account for discounts, promotions, and 
-seasonality — a product selling three times its normal rate 
-during a promotion should not trigger a phantom inventory 
-alert.
-
-Finally, a staff feedback loop would allow the system to 
-learn from real check outcomes over time, gradually reducing 
-false positives and improving the confidence of each alert.
+- [Methodology](docs/methodology.md), the Poisson maths, model validation results, and the trading-hours derivation
+- [Limitations](docs/limitations.md), full limitations list and why they're stated explicitly
+- [Business case](docs/business-case.md), estimated impact and next steps toward production
