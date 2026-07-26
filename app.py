@@ -11,9 +11,9 @@ The dataset is a UK-filtered subset of a public online retail dataset,
 deliberately repurposed to simulate a single physical branch.
 """
 
+import hashlib
 import streamlit as st
 import pandas as pd
-import hashlib
 from model import compute_anomaly_confidence
 
 st.set_page_config(
@@ -53,6 +53,7 @@ def load_catalog(filepath: str) -> dict:
 
     # Dict over DataFrame, the app only ever needs one SKU at a time, O(1) lookup
     return catalog_df.to_dict("index")
+
 
 # Mock data only, not connected to any real warehouse, till, or pricing system
 
@@ -238,5 +239,51 @@ if is_flagged:
         st.metric("Where to Check", get_mock_shelf_location(selected_sku))
     with action_col2:
         st.metric("Potential Lost Revenue", f"£{simulated_lost_revenue:.2f}")
+
+st.markdown("---")
+st.markdown("### Floor Staff Worklist")
+st.caption(
+    "This table shows how flagged products could feed directly into a "
+    "prioritised task list for staff, alongside the selected item's two "
+    "neighbours in the catalogue for comparison. Shelf locations are "
+    "simulated, not connected to a real warehouse system."
+)
+
+sku_list = list(sku_catalog.keys())
+selected_idx = sku_list.index(selected_sku)
+
+# The selected item uses the slider-adjusted velocity so the table reacts
+# to the sliders above; its two neighbours use their real catalogue
+# velocity, giving a mix of live-adjusted and real data in the same table.
+worklist_skus = [
+    selected_sku,
+    sku_list[(selected_idx + 1) % len(sku_list)],
+    sku_list[(selected_idx + 2) % len(sku_list)],
+]
+
+worklist_rows = []
+for i, sku in enumerate(worklist_skus):
+    velocity = normal_velocity if i == 0 else sku_catalog[sku]["Calculated_Velocity"]
+    row_result = compute_anomaly_confidence(velocity, hours_zero_sales)
+    row_confidence = row_result["anomaly_confidence"]
+
+    if row_confidence >= confidence_threshold:
+        tier = "CRITICAL"
+    elif row_confidence >= (confidence_threshold - 15):
+        tier = "WARNING"
+    else:
+        tier = "MONITOR"
+
+    worklist_rows.append({
+        "Task ID": f"TSK-{9400 + selected_idx + i}",
+        "SKU": sku,
+        "Description": sku_catalog[sku]["Description"],
+        "Shelf Location": get_mock_shelf_location(sku),
+        "Anomaly Score": f"{row_confidence:.1f}%",
+        "Priority Tier": tier,
+    })
+
+worklist_df = pd.DataFrame(worklist_rows)
+st.dataframe(worklist_df, use_container_width=True, hide_index=True)
 
 st.markdown("---")
