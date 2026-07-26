@@ -7,14 +7,13 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scipy.stats import poisson
+from model import compute_anomaly_confidence as _compute_anomaly_confidence
 
 
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> float:
-    expected_sales = velocity * hours_since_last_sale
-    probability_of_zero_sales = poisson.pmf(0, expected_sales)
-    return (1 - probability_of_zero_sales) * 100
-
+    # Wrapper so the rest of this test file's calls don't need to change,
+    # the real function now returns a dict, this test file wants just the score.
+    return _compute_anomaly_confidence(velocity, hours_since_last_sale)["anomaly_confidence"]
 
 def test_zero_hours_means_zero_anomaly():
     """No time has passed, so there should be no anomaly at all."""
