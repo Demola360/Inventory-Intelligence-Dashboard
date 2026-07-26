@@ -9,14 +9,11 @@ If the anomaly score doesn't rise as the injected gap grows, the model
 isn't doing its job. This is the check that proves it is.
 """
 
-from scipy.stats import poisson
 import pandas as pd
+from model import compute_anomaly_confidence as _compute_anomaly_confidence
 
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> float:
-    expected_sales = velocity * hours_since_last_sale
-    probability_of_zero_sales = poisson.pmf(0, expected_sales)
-    return (1 - probability_of_zero_sales) * 100
-
+    return _compute_anomaly_confidence(velocity, hours_since_last_sale)["anomaly_confidence"]
 
 def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.DataFrame:
     """
