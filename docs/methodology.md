@@ -77,6 +77,28 @@ This confirms the model responds correctly in the direction it should, even with
 against. Faster-selling products reach high anomaly scores much sooner than slow-moving ones, reflecting the model 
 judging each product against its own normal selling rate rather than applying one flat rule.
 
+## Threshold sensitivity
+
+The 95% Critical threshold used by default in the app is a reasonable
+starting point, not an empirically calibrated one. To show what that
+choice actually costs or saves, the real catalogue was run through a
+range of candidate thresholds at a fixed 6-hour gap:
+
+| Threshold | Products Flagged | % of Catalogue |
+|---|---|---|
+| 80% | 898 | 24.7% |
+| 85% | 788 | 21.7% |
+| 90% | 646 | 17.8% |
+| 95% | 491 | 13.5% |
+| 99% | 298 | 8.2% |
+
+This isn't a search for the "correct" threshold, it's a demonstration of
+the tradeoff behind it. A lower threshold flags more products sooner, at
+the cost of more false alarms and busier staff worklists. A higher one
+flags fewer, more confidently, but risks missing real issues longer.
+Real calibration would need labelled outcomes from a staff feedback
+loop, which this project doesn't have yet, see Limitations.
+
 ## Key decisions made
 
 1. **UK filter.** Filtered to only United Kingdom transactions, treating that subset as one branch of a fictional retail
