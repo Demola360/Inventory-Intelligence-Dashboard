@@ -165,7 +165,7 @@ simulated_revenue_exposure = expected_sales_in_window * mock_price if is_flagged
 
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "This dashboard identifies products with unusual sales silence "
+    "This dashboard identifies products with unusual periods of no sales "
     "and prioritises them for a physical check."
 )
 
