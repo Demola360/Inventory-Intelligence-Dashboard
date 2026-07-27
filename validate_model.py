@@ -16,7 +16,10 @@ defaults represent, without claiming any one threshold is "correct".
 """
 
 import pandas as pd
-from model import compute_anomaly_confidence
+from model import compute_anomaly_score as _compute_anomaly_score
+
+def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> float:
+    return _compute_anomaly_score(velocity, hours_since_last_sale)["anomaly_score"]
 
 
 def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.DataFrame:
