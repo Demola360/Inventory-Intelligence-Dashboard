@@ -82,7 +82,7 @@ if not full_catalog:
 # through all 3,645 products. Values are pulled live from the catalog below,
 # never hardcoded, so they can't drift out of sync if the pipeline is rerun
 # with updated data or logic.
-CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
+CURATED_SKU_IDS = ["20663", "23077", "23313", "22999", "90214M", "22457"]
 CURATED_SKUS = {
     sku: full_catalog[sku]
     for sku in CURATED_SKU_IDS
@@ -212,14 +212,14 @@ if is_critical:
     st.error(f"""
 ### CRITICAL: HIGH SHELF-CHECK PRIORITY ({phantom_stock_confidence:.1f}% Anomaly Score)
 **What this means:** it is statistically unusual for this product to have no sales this long, 
- given its normal sales rate. This suggests it as worth a physically checking the item at its 
+ given its normal sales rate. This suggests it is worth physically checking the item at its 
   location immediately, it does not confirm stock is missing.
 """)
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Anomaly Score)
     **Observation:** Sales are unusually slow but still within marginal statistical variance. 
-     Worth monitoring before dispatching staff.
+     Worth monitoring before physically checking the item at its location.
     """)
 else:
     st.success(f"""
