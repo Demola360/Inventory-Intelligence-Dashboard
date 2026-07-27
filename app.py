@@ -211,13 +211,15 @@ st.markdown("### Anomaly Assessment")
 if is_critical:
     st.error(f"""
 ### CRITICAL: HIGH SHELF-CHECK PRIORITY ({phantom_stock_confidence:.1f}% Anomaly Score)
-**What this means:** it is statistically unusual for this product to have zero sales this long, given its normal rate. This flags it as worth a physical check, it does not confirm stock is missing.
-**Action Required:** Verify the item at its location immediately.
+**What this means:** it is statistically unusual for this product to have no sales this long, 
+ given its normal sales rate. This suggests it as worth a physically checking the item at its 
+  location immediately, it does not confirm stock is missing.
 """)
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Anomaly Score)
-    **Observation:** Sales are unusually slow but still within marginal statistical variance. Worth monitoring before dispatching staff.
+    **Observation:** Sales are unusually slow but still within marginal statistical variance. 
+     Worth monitoring before dispatching staff.
     """)
 else:
     st.success(f"""
