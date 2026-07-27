@@ -7,13 +7,11 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from model import compute_anomaly_confidence as _compute_anomaly_confidence
+from model import compute_anomaly_score as _compute_anomaly_score
 
 
 def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> float:
-    # Wrapper so the rest of this test file's calls don't need to change,
-    # the real function now returns a dict, this test file wants just the score.
-    return _compute_anomaly_confidence(velocity, hours_since_last_sale)["anomaly_confidence"]
+    return _compute_anomaly_score(velocity, hours_since_last_sale)["anomaly_score"]
 
 def test_zero_hours_means_zero_anomaly():
     """No time has passed, so there should be no anomaly at all."""
