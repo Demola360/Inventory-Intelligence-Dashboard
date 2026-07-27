@@ -14,7 +14,7 @@ deliberately repurposed to simulate a single physical branch.
 import hashlib
 import streamlit as st
 import pandas as pd
-from model import compute_anomaly_score
+from model import compute_anomaly_score, classify
 
 st.set_page_config(
     page_title="Inventory Intelligence Dashboard",
@@ -66,32 +66,14 @@ def get_mock_unit_price(sku: str) -> float:
     return float((int(sku_digits) % 135 + 15) / 10)
 
 
-def classify(score: float, threshold: float) -> str:
-    """
-    Shared classification logic so the single-product view and the
-    worklist always use the same three-tier vocabulary: Normal, Warning,
-    Critical. Warning begins 15 points below the Critical threshold,
-    a demonstration business rule, see BR01 in docs/requirements.md,
-    not an empirically validated one.
-    """
-    if score >= threshold:
-        return "Critical"
-    elif score >= (threshold - 15):
-        return "Warning"
-    else:
-        return "Normal"
-
-
 full_catalog = load_catalog(DATA_FILE)
 if not full_catalog:
     st.stop()
 
 # 6 SKUs selected to show a clear example from each alert tier at default
-# settings (3 hours, 95% threshold): two Normal, two Warning, two Critical,
-# so a first-time visitor sees the full range of outcomes without scrolling
-# through all products. Values are pulled live from the catalog below,
-# never hardcoded, so they can't drift out of sync if the pipeline is rerun
-# with updated data or logic.
+# settings (3 hours, 95% threshold): two Normal, two Warning, two Critical.
+# Values are pulled live from the catalog below, never hardcoded, so they
+# can't drift out of sync if the pipeline is rerun with updated data or logic.
 CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
 CURATED_SKUS = {
     sku: full_catalog[sku]
@@ -111,26 +93,31 @@ selected_sku = st.sidebar.selectbox(
     format_func=lambda x: f"{sku_catalog[x]['Description']} ({x})",
 )
 
-observed_velocity = sku_catalog[selected_sku]["Calculated_Velocity"]
+# Three distinct values, not two: the true historical rate, the
+# business-rule-adjusted monitoring rate used by default, and whatever
+# the user sets the scenario slider to. Conflating any of these is
+# misleading, each is shown separately below.
+observed_velocity = sku_catalog[selected_sku]["Observed_Velocity"]
+monitoring_velocity = sku_catalog[selected_sku]["Monitoring_Velocity"]
 product_desc = sku_catalog[selected_sku]["Description"]
 
 st.sidebar.markdown("---")
 
-# Labelled as "assumed" rather than "normal" because this is a scenario
-# input the user controls, not a live read of the product's actual
-# historical rate. The real observed rate is shown separately below.
 assumed_velocity = st.sidebar.slider(
     "Assumed Sales Velocity (Units/Hour)",
     min_value=0.1,
-    max_value=max(20.0, float(observed_velocity) * 1.5),
-    value=float(observed_velocity),
+    max_value=max(20.0, float(monitoring_velocity) * 1.5),
+    value=float(monitoring_velocity),
     step=0.1,
     key=f"vel_{selected_sku}",
-    help="The sales rate used for this scenario. Defaults to the product's observed historical rate, shown below, but can be adjusted to explore other scenarios.",
+    help="The sales rate used for this scenario. Defaults to the product's monitoring rate, shown below, but can be adjusted to explore other scenarios.",
 )
 
-if abs(assumed_velocity - observed_velocity) > 0.01:
-    st.sidebar.caption(f"Observed historical rate for this product: {observed_velocity:.2f} units/hr")
+st.sidebar.caption(
+    f"Historical rate: {observed_velocity:.2f} units/hr  \n"
+    f"Monitoring baseline: {monitoring_velocity:.2f} units/hr  \n"
+    f"Scenario assumption: {assumed_velocity:.2f} units/hr"
+)
 
 hours_zero_sales = st.sidebar.slider(
     "Current Hours with Zero Sales",
@@ -149,7 +136,7 @@ critical_threshold = st.sidebar.slider(
     value=95,
     step=1,
     key="threshold_slider",
-    help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds generate more alerts, sooner, at the cost of more false alarms.",
+    help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds generate more alerts, sooner.",
 )
 
 result = compute_anomaly_score(assumed_velocity, hours_zero_sales)
@@ -165,7 +152,7 @@ simulated_revenue_exposure = expected_sales_in_window * mock_price if is_flagged
 
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "This dashboard identifies products with unusual periods of no sales "
+    "This dashboard identifies products with unusual sales silence "
     "and prioritises them for a physical check."
 )
 
@@ -192,8 +179,8 @@ st.info(narrative_text)
 
 with st.expander("How does the model decide what's suspicious?"):
     st.markdown("""
-The model asks a simple question: based on how fast this product normally sells,
-how likely is it to genuinely have zero sales this long?
+The model asks a simple question: given a product's assumed sales rate,
+how unusual would it be to observe zero sales over this period?
 
 Very unlikely, flags as suspicious.
 
@@ -260,14 +247,14 @@ st.markdown("### Priority Worklist")
 st.caption(
     "The five products with the highest anomaly score across the whole "
     "catalogue, for the same hours-without-sale scenario set above, using "
-    "each product's own observed velocity, not the assumed rate above. "
+    "each product's own monitoring velocity, not the assumed rate above. "
     "This is a genuinely ranked list, not neighbouring catalogue entries. "
     "Shelf locations are simulated, not connected to a real warehouse system."
 )
 
 worklist_rows = []
 for sku, details in full_catalog.items():
-    row_score = compute_anomaly_score(details["Calculated_Velocity"], hours_zero_sales)["anomaly_score"]
+    row_score = compute_anomaly_score(details["Monitoring_Velocity"], hours_zero_sales)["anomaly_score"]
     worklist_rows.append({
         "SKU": sku,
         "Description": details["Description"],

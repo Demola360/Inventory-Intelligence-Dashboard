@@ -2,36 +2,28 @@
 
 ## How the model works
 
-The dashboard asks one question: what is the statistical probability that a product with this historical sales rate will 
-have zero sales over this given period, likely, or due to an inventory problem that needs investigation?
+Given a product's assumed sales rate, how unusual would it be to observe zero sales over a specified period? That's the one question this model answers.
 
-To answer it, the model calculates Lambda (λ), the number of sales expected in a given time frame. Sales Velocity is how 
-many units a product historically sells per hour.
+To answer it, the model calculates Lambda (λ), the number of sales expected in a given time frame. Sales velocity is how many units a product historically sells per hour, this models unit quantity as the count of interest, not transaction frequency, one customer buying six units in a single transaction counts as six toward this rate, not one.
 
 **λ = Sales Velocity × Hours**
 
-The output is the probability of zero sales. The dashboard converts this into an anomaly score, which flips the probability 
-so it's easier to understand. For example, if the model says there's a 5% chance the period of no sales is normal, the 
-anomaly score is 95%, meaning this length of no sales is statistically unusual and worth checking. This does not confirm 
-stock is missing, it flags the item as worth a physical check. The result is a colour-coded verdict, Normal, Warning, or 
-Critical, so staff can act on it without needing to understand the statistics behind it.
+The output is the probability of zero sales. The dashboard converts this into an anomaly score, which flips the probability so it's easier to interpret. For example, if the model says there's a 5% chance the period of no sales is normal, the anomaly score is 95%, meaning this length of no sales is statistically unusual and worth checking. This is a decision-support measure, not a calibrated probability that stock is physically missing. The result is a colour-coded verdict, Normal, Warning, or Critical, so staff can act on it without needing to understand the statistics behind it.
 
 ## Why the Poisson distribution
 
-Poisson is the standard tool for modelling how many times an event happens in a fixed window, when those events occur 
-independently at a roughly constant average rate. A sales transaction landing in a given hour fits that description 
-reasonably well.
+Poisson is the standard tool for modelling how many times an event happens in a fixed window, when those events occur independently at a roughly constant average rate.
 
 - It directly answers the question being asked, how unlikely is this specific length of time without sales.
-- It needs very little data to work, just one number, the average rate, which makes it usable even for lower-volume
-  products.
-- It's easily interpreted as a percentage, easier for non-technical staff to act on than a raw probability.
-- It mirrors established practice in real anomaly detection and quality-control settings.
+- It needs very little data to work, just one number, the average rate, which makes it usable even for lower-volume products.
+- It converts naturally into a percentage, easier for non-technical staff to act on than a raw probability.
+- It mirrors established practice in anomaly detection and quality-control settings.
+
+This is an interpretable baseline for converting historical demand and elapsed time into an indication of unusual sales inactivity, not a claim that it's the most sophisticated model available. The constant-rate and independence assumptions it relies on are examined in [limitations](limitations.md).
 
 ## Discovering the trading hours from the data itself
 
-Rather than assuming a trading window, the hour was extracted from each invoice date and transactions were counted per 
-hour, on the UK-filtered subset specifically, since the window needs to be justified against the same data it's applied to.
+Rather than assuming a trading window, the hour was extracted from each invoice date and transactions were counted per hour, on the UK-filtered subset specifically, since the window needs to be justified against the same data it's applied to, not a broader international dataset that may follow a different pattern.
 
 | Hour | Transaction Volume (UK only) |
 |---|---|
@@ -51,16 +43,13 @@ hour, on the UK-filtered subset specifically, since the window needs to be justi
 | 19:00 | 3,005 |
 | 20:00 | 778 |
 
-There's negligible activity before 07:00 and after 20:00, confirming the 06:00 to 20:00, 14-hour trading window 
-used to calculate each product's normal sales velocity.
+Activity is negligible before 07:00 and after 20:00, supporting a 06:00 inclusive to 20:00 exclusive simulation window, 14 hours, based on the observed transaction activity in this dataset, not confirmed physical store opening hours.
 
-## Model validation
+## Synthetic model behaviour checks
 
-Since no labelled phantom-inventory events exist for this dataset, the model was validated by injecting synthetic sales 
-gaps of increasing length for a known product velocity, and confirming the anomaly score rises monotonically as the 
-injected gap grows. See `validate_model.py`.
+Since no labelled phantom-inventory events exist for this dataset, the implementation was checked rather than validated in the strict sense. Checking that scores increase monotonically as an injected gap grows confirms the formula was implemented correctly, it doesn't confirm the model correctly identifies real phantom inventory, which would require labelled outcomes this project doesn't have. See `validate_model.py`.
 
-Tested against a product selling 0.3 units/hour on average:
+Checked against a product selling 0.3 units/hour on average:
 
 | Injected Period of No Sales (hrs) | Anomaly Score |
 |---|---|
@@ -73,44 +62,28 @@ Tested against a product selling 0.3 units/hour on average:
 | 12 | 97.27% |
 | 24 | 99.93% |
 
-This confirms the model responds correctly in the direction it should, even without real-world ground truth to compare 
-against. Faster-selling products reach high anomaly scores much sooner than slow-moving ones, reflecting the model 
-judging each product against its own normal selling rate rather than applying one flat rule.
+Scores increase monotonically as expected. Faster-selling products reach high anomaly scores much sooner than slow-moving ones, reflecting the model judging each product against its own normal selling rate rather than applying one flat rule.
 
-## Threshold sensitivity
+## Workload sensitivity by threshold
 
-The 95% Critical threshold used by default in the app is a reasonable
-starting point, not an empirically calibrated one. To show what that
-choice actually costs or saves, the real catalogue was run through a
-range of candidate thresholds at a fixed 6-hour gap:
+The 95% Critical threshold used by default in the app is a reasonable starting point, not an empirically calibrated one. Running the real catalogue through a range of candidate thresholds at the dashboard's actual default gap, 3 hours, shows how the size of the resulting worklist changes:
 
 | Threshold | Products Flagged | % of Catalogue |
 |---|---|---|
-| 80% | 898 | 24.7% |
-| 85% | 788 | 21.7% |
-| 90% | 646 | 17.8% |
-| 95% | 491 | 13.5% |
-| 99% | 298 | 8.2% |
+| 80% | 445 | 12.2% |
+| 85% | 374 | 10.3% |
+| 90% | 298 | 8.2% |
+| 95% | 215 | 5.9% |
+| 99% | 111 | 3.1% |
 
-This isn't a search for the "correct" threshold, it's a demonstration of
-the tradeoff behind it. A lower threshold flags more products sooner, at
-the cost of more false alarms and busier staff worklists. A higher one
-flags fewer, more confidently, but risks missing real issues longer.
-Real calibration would need labelled outcomes from a staff feedback
-loop, which this project doesn't have yet, see Limitations.
+A lower threshold generates a larger investigation worklist and increases sensitivity to unusual gaps. A higher threshold produces a smaller, more selective one. Which alerts turn out to be genuine issues cannot be determined without confirmed shelf-check outcomes, so this is workload sensitivity, not a measure of accuracy. See [limitations](limitations.md).
 
 ## Key decisions made
 
-1. **UK filter.** Filtered to only United Kingdom transactions, treating that subset as one branch of a fictional retail
-   store chain. Without this filter, the single-branch simulation breaks down.
+1. **UK filter.** Filtered to only United Kingdom transactions, treated as one fictional branch for this simulation. Without this filter, the single-branch simulation breaks down.
 
-2. **14-hour trading window.** Derived empirically from the UK-only hourly transaction distribution above, rather than
-   assumed.
+2. **14-hour trading window.** Derived empirically from the UK-only hourly transaction distribution above, rather than assumed.
 
-3. **Curated default catalogue.** Six items selected to show two examples from each alert tier, Normal, Warning, and
-   Critical, at default settings, so a first-time visitor sees the full range of outcomes without scrolling through the
-   full catalogue.
+3. **Curated default catalogue.** Six items selected to show two examples from each alert tier, Normal, Warning, and Critical, at default settings, so a first-time visitor sees the full range of outcomes without scrolling through the full catalogue.
 
-4. **Velocity floor of 0.2 (a business decision, not a statistical one).** Products below this rate are monitored using a
-   minimum rate of 0.2 units per hour so they still trigger alerts within a reasonable shift, rather than taking days or
-   weeks. Their true observed velocity is preserved separately in the `Observed_Velocity` column for transparency.
+4. **Monitoring velocity floor of 0.2 (a business decision, not a statistical one).** Products below this rate are monitored using a minimum rate of 0.2 units per hour so they still trigger alerts within a reasonable shift, rather than requiring a longer zero-sales interval than the POC is intended to simulate. The true observed velocity is preserved separately in the `Observed_Velocity` column for transparency.

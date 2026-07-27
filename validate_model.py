@@ -1,18 +1,21 @@
 """
-Synthetic Validation: Phantom Inventory Model
------------------------------------------------
-Since we have no real labelled phantom-inventory events, we validate the
-model's sensitivity instead: does it correctly flag increasingly long,
-artificially-injected periods of no sales as increasingly suspicious?
+Synthetic Behaviour Testing: Sales-Gap Anomaly Model
+-----------------------------------------------------
+This checks two things about the implemented model, not whether it
+correctly identifies real phantom inventory, that would require labelled
+outcomes this project doesn't have.
 
-If the anomaly score doesn't rise as the injected gap grows, the model
-isn't doing its job. This checks that it does.
+Part 1 checks that anomaly scores increase monotonically as the
+simulated no-sale interval increases, a sanity check that the formula
+was implemented correctly, not evidence of predictive performance.
 
-This file also checks how the choice of alert threshold affects how many
-products get flagged, since the 80-99% threshold range and the default
-95% Critical threshold in app.py are demonstrative defaults, not values
-calibrated against real outcomes. This section shows the tradeoff those
-defaults represent, without claiming any one threshold is "correct".
+Part 2 shows how the choice of alert threshold changes the size of the
+resulting worklist across the real catalogue. This is a workload
+sensitivity analysis, not a measure of accuracy: without confirmed
+shelf-check outcomes, there's no way to know which flagged items are
+genuine issues and which aren't, so no threshold here can be described
+as producing more or fewer false alarms, only a larger or smaller
+worklist.
 """
 
 import pandas as pd
@@ -28,10 +31,8 @@ def get_anomaly_score(velocity: float, hours_since_last_sale: float) -> float:
 
 def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.DataFrame:
     """
-    Injects a range of artificial periods of no sales for one product's
-    known velocity, and records how the anomaly score responds.
-    A healthy model should show scores rising monotonically as the
-    injected gap grows.
+    Checks that anomaly scores increase monotonically as the simulated
+    no-sale interval increases, for one product's known velocity.
     """
     results = []
     for hours in gap_hours_to_test:
@@ -43,15 +44,15 @@ def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.
 def run_threshold_sensitivity(catalog_path: str, hours_since_last_sale: int, thresholds: list[int]) -> pd.DataFrame:
     """
     For a fixed period of no sales, shows how many products in the real
-    catalogue would be flagged as Critical at each candidate threshold.
-    This doesn't prove any threshold is correct, it shows the tradeoff:
-    a lower threshold flags more products (more false alarms, faster
-    detection), a higher one flags fewer (fewer false alarms, slower
-    detection). Real calibration would need labelled outcomes from a
-    staff feedback loop, which this project doesn't have yet.
+    catalogue would be classified as Critical at each candidate
+    threshold. This is a workload sensitivity analysis: a lower
+    threshold generates a larger investigation worklist, a higher
+    threshold generates a smaller, more selective one. The impact on
+    false-positive and missed-issue rates cannot be measured without
+    confirmed shelf-check outcomes, which this project doesn't have.
     """
     df = pd.read_csv(catalog_path)
-    df["score"] = df["Calculated_Velocity"].apply(
+    df["score"] = df["Monitoring_Velocity"].apply(
         lambda v: get_anomaly_score(v, hours_since_last_sale)
     )
 
@@ -73,16 +74,16 @@ if __name__ == "__main__":
     test_gaps = [1, 2, 3, 4, 6, 8, 12, 24]
 
     results_df = run_synthetic_gap_test(test_velocity, test_gaps)
-    print(f"Validation for a product selling {test_velocity} units/hour on average:\n")
+    print(f"Checking a product selling {test_velocity} units/hour on average:\n")
     print(results_df.to_string(index=False))
 
     scores = results_df["Anomaly_Score"].tolist()
     is_monotonic = all(scores[i] <= scores[i + 1] for i in range(len(scores) - 1))
-    print(f"\nScores rise monotonically with longer periods of no sales: {is_monotonic}")
+    print(f"\nScores increase monotonically with longer periods of no sales: {is_monotonic}")
 
-    # Part 2: how does the threshold choice affect how many products get flagged?
+    # Part 2: how does the threshold choice affect worklist size?
     print("\n" + "=" * 60)
-    print("Threshold sensitivity across the real catalogue")
+    print("Workload sensitivity across the real catalogue")
     print("=" * 60)
 
     thresholds_to_test = [80, 85, 90, 95, 99]
@@ -96,8 +97,9 @@ if __name__ == "__main__":
     print(f"\nAt {hours_scenario} hours since last sale:\n")
     print(sensitivity_df.to_string(index=False))
     print(
-        "\nThis shows the tradeoff behind the threshold choice, not a "
-        "correct answer. A lower threshold flags more products sooner "
-        "at the cost of more false alarms; a higher one flags fewer, "
-        "more confidently, but may miss real issues longer."
+        "\nA lower threshold generates a larger investigation workload "
+        "and increases sensitivity to unusual gaps. A higher threshold "
+        "produces a smaller, more selective worklist. Which alerts turn "
+        "out to be genuine issues cannot be determined without confirmed "
+        "shelf-check outcomes."
     )
