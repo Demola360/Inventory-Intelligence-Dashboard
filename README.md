@@ -9,15 +9,15 @@ This project shows how historical sales patterns can be used to identify which p
 
 ---
 
-**Critical:** Product flagged after 6 hours of no sales.
+**Critical example:** a higher-velocity product flagged after 6 hours without sales.
 
 ![Critical alert](assets/screenshots/Critical.png)
 
-**Warning:** Product flagged after 2 hours of no sales.
+**Warning example:** a lower-velocity product flagged after 2 hours without sales, its normal rate makes even a short gap unusual.
 
 ![Warning status](assets/screenshots/Warning.png)
 
-**Normal:** Even after 3 hours of no sales, this product's status is normal.
+**Normal example:** a slow-moving product remains Normal even after 3 hours without sales, that gap is within its expected range.
 
 ![Normal status](assets/screenshots/Normal.png)
 
@@ -25,19 +25,19 @@ This project shows how historical sales patterns can be used to identify which p
 
 ## The problem
 
-A retail store's inventory system may record an item as available even though it's physically absent, due to theft, misplacement, or damage. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem means lost sales sitting on a shelf nobody can find. A store carrying thousands of products can't realistically do either well without help.
+A retail store's inventory system may record an item as available even though it's physically absent, due to theft, misplacement, or damage. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem means lost sales sitting on a shelf nobody can find. A store carrying thousands of products can't do either well without help.
 
 ## Business objective
 
-Give store and inventory teams a way to prioritise which products to physically check, based on how unusual their current sales silence is, rather than checking everything, checking nothing, or relying on staff noticing a gap by chance.
+Give store and inventory teams a way to prioritise which products to physically check, based on how unusual their current sales silence is, rather than checking every product, checking none, or relying on staff noticing a gap by chance.
 
 ## Proposed solution
 
 A dashboard that compares each product's normal sales rate against how long it's actually gone without a sale, and scores how statistically unusual that gap is. Products are sorted into Normal, Warning, or Critical, so staff know where to look first without needing to understand the statistics behind the score.
 
-## Expected business value
+## Potential business value
 
-Fewer missed sales sitting unnoticed on a shelf, and less staff time spent checking products that were never actually a problem. In a real deployment, this would mean investigation effort goes toward the handful of products most likely to be worth it, rather than being spread thin across an entire catalogue or left to chance.
+Fewer missed sales sitting unnoticed on a shelf, and less staff time spent checking products that were never actually a problem, are the outcomes this concept could support. In a real deployment, investigation effort could go toward the handful of products most likely to be worth it, rather than being spread thin across an entire catalogue. These are hypothesised outcomes the concept is built to support, not results this POC has measured.
 
 ## Scope
 
@@ -53,11 +53,11 @@ Store associates carrying out the physical checks, and store or inventory manage
 
 ## How the prototype works
 
-Pick a product, or let the dashboard load one of six examples chosen to show a Normal, a Warning, and a Critical result side by side. Sliders let you adjust the product's sales rate, how long it's gone without a sale, and how sensitive the alert threshold is, and the assessment updates as you move them. A worklist below the main result shows how a flagged item could feed into a task for staff, alongside two neighbouring products for comparison.
+Pick a product, or let the dashboard load one of six examples chosen to show a Normal, a Warning, and a Critical result side by side. Sliders let you adjust the product's sales rate, how long it's gone without a sale, and how sensitive the alert threshold is, and the assessment updates as you move them. A worklist below the main result shows the five products currently ranked highest across the whole catalogue for that scenario.
 
 ## Success criteria
 
-For this proof of concept specifically, success means the model produces results a non-technical person can read and trust: a clear Normal, Warning, or Critical outcome, faster-selling products getting flagged sooner than slow ones for an equivalent gap, and a threshold that can be adjusted and explored rather than fixed and opaque. It also means being honest about what the model can't yet claim, an anomaly score is not the same as a confirmed missing item.
+For this proof of concept, success means the model produces results a non-technical person can read and trust: a clear Normal, Warning, or Critical outcome, faster-selling products getting flagged sooner than slow ones for an equivalent gap, and a threshold that can be adjusted and explored rather than fixed and opaque. It also means being honest about what the model can't yet claim, an anomaly score is not the same as a confirmed missing item.
 
 A production version would be judged differently: how many flagged checks turned out to be real issues, how much staff time was saved versus the old process, and whether stock accuracy actually improved. None of those can be measured yet, since they depend on real outcomes this prototype doesn't have access to.
 
@@ -67,7 +67,7 @@ Python · Streamlit · Pandas · NumPy · SciPy (Poisson)
 
 ## Read more
 
-- [Methodology](docs/methodology.md), the maths behind the score, how the trading hours were derived from the data, and the validation results
-- [Limitations](docs/limitations.md), where the model's assumptions break down, and why that's stated plainly rather than glossed over
-- [Business case](docs/business-case.md), what a production rollout would need, and what's still illustrative rather than measured
+- [Methodology](docs/methodology.md), the maths behind the score, how the trading hours were derived from the data, and the behaviour checks
+- [Limitations](docs/limitations.md), assumptions, constraints, and known weaknesses
+- [Business case](docs/business-case.md), stakeholders, process flow, and what a production rollout would need
 - [Requirements](docs/requirements.md), the functional and business rules behind the current build
