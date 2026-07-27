@@ -5,7 +5,7 @@ A retail store's inventory system may say an item is in stock when it
 physically isn't, stolen, misplaced, or damaged. This is phantom inventory.
 
 This tool uses a Poisson model to work out how unusual a sales gap is for
-a given product, and only flags the ones worth a staff member checking.
+a given product, and prioritises products that may warrant a physical check.
 
 The dataset is a UK-filtered subset of a public online retail dataset,
 deliberately repurposed to simulate a single physical branch.
@@ -89,7 +89,7 @@ CURATED_SKUS = {
     if sku in full_catalog
 }
 
-st.sidebar.header("Simulation Controls")
+st.sidebar.header("Scenario Inputs")
 
 show_all = st.sidebar.checkbox("View all Products")
 sku_catalog = full_catalog if show_all else CURATED_SKUS
@@ -151,8 +151,8 @@ simulated_lost_revenue = expected_sales_in_window * mock_price if is_flagged els
 
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "This is an intelligent inventory monitoring tool that identifies products with unusual"
-    " low sales volume and prioritises them for investigation."
+    "This proof-of-concept dashboard identifies unusually long sales gaps"
+    " and prioritises products for investigation."
 )
 
 if is_critical:
@@ -185,9 +185,9 @@ Very unlikely, flags as suspicious.
 
 Quite likely, no action required.
 
-That probability is converted into a single anomaly confidence percentage for proper understanding.
+The probability is converted into an anomaly score, where a higher score indicates a more unusual sales gap.
 
-**Important distinction:** this score measures how statistically unusual the period of zero sales is,
+**Important distinction:** this score measures how statistically unusual the period of no sales is,
 not the probability that stock is physically missing.
 A high score means "this is worth checking," not "this is confirmed missing."
 
@@ -199,7 +199,7 @@ st.markdown("---")
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Normal Sales Rate", f"{normal_velocity:.2f} units/hr")
+    st.metric("Historical Sales Rate", f"{normal_velocity:.2f} units/hr")
 with col2:
     st.metric("Hours Since Last Sale", f"{hours_zero_sales} hours")
 with col3:
@@ -212,14 +212,15 @@ if is_critical:
     st.error(f"""
 ### CRITICAL: HIGH SHELF-CHECK PRIORITY ({phantom_stock_confidence:.1f}% Anomaly Score)
 **What this means:** it is statistically unusual for this product to have no sales this long, 
- given its normal sales rate. This suggests it is worth physically checking the item at its 
-  location immediately, it does not confirm stock is missing.
+ given its normal sales rate. This suggests physically checking the item at its 
+  location as a high-priority, it does not confirm stock is missing.
 """)
 elif is_flagged:
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({phantom_stock_confidence:.1f}% Anomaly Score)
-    **Observation:** Sales are unusually slow but still within marginal statistical variance. 
-     Worth monitoring before physically checking the item at its location.
+    **Observation:** The sales gap has crossed the Warning threshold but remains below the 
+    Critical threshold. Continue monitoring or review inventory records before escalating to 
+    a physical check.
     """)
 else:
     st.success(f"""
