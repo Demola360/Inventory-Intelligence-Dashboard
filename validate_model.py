@@ -79,7 +79,7 @@ if __name__ == "__main__":
     print("=" * 60)
 
     thresholds_to_test = [80, 85, 90, 95, 99]
-    hours_scenario = 6  # a fixed, realistic period of no sales to test against
+    hours_scenario = 3  # a fixed, realistic period of no sales to test against
 
     sensitivity_df = run_threshold_sensitivity(
         catalog_path="data/aggregated_catalog.csv",
