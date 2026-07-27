@@ -14,7 +14,7 @@ deliberately repurposed to simulate a single physical branch.
 import hashlib
 import streamlit as st
 import pandas as pd
-from model import compute_anomaly_confidence
+from model import compute_anomaly_score
 
 st.set_page_config(
     page_title="Inventory Intelligence Dashboard",
@@ -152,9 +152,9 @@ critical_threshold = st.sidebar.slider(
     help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds generate more alerts, sooner, at the cost of more false alarms.",
 )
 
-result = compute_anomaly_confidence(assumed_velocity, hours_zero_sales)
+result = compute_anomaly_score(assumed_velocity, hours_zero_sales)
 expected_sales_in_window = result["expected_sales"]
-anomaly_score = result["anomaly_confidence"]
+anomaly_score = result["anomaly_score"]
 
 status = classify(anomaly_score, critical_threshold)
 is_flagged = status in ("Warning", "Critical")
@@ -267,7 +267,7 @@ st.caption(
 
 worklist_rows = []
 for sku, details in full_catalog.items():
-    row_score = compute_anomaly_confidence(details["Calculated_Velocity"], hours_zero_sales)["anomaly_confidence"]
+    row_score = compute_anomaly_score(details["Calculated_Velocity"], hours_zero_sales)["anomaly_score"]
     worklist_rows.append({
         "SKU": sku,
         "Description": details["Description"],
