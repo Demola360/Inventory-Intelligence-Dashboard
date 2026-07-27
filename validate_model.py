@@ -9,17 +9,21 @@ If the anomaly score doesn't rise as the injected gap grows, the model
 isn't doing its job. This checks that it does.
 
 This file also checks how the choice of alert threshold affects how many
-products get flagged, since the 80-99% sensitivity range and the default
+products get flagged, since the 80-99% threshold range and the default
 95% Critical threshold in app.py are demonstrative defaults, not values
 calibrated against real outcomes. This section shows the tradeoff those
 defaults represent, without claiming any one threshold is "correct".
 """
 
 import pandas as pd
-from model import compute_anomaly_score as _compute_anomaly_score
+from model import compute_anomaly_score
 
-def compute_anomaly_confidence(velocity: float, hours_since_last_sale: float) -> float:
-    return _compute_anomaly_score(velocity, hours_since_last_sale)["anomaly_score"]
+
+def get_anomaly_score(velocity: float, hours_since_last_sale: float) -> float:
+    """Thin wrapper so the functions below can call this with just two
+    arguments and get a plain number back, instead of unpacking a dict
+    every time."""
+    return compute_anomaly_score(velocity, hours_since_last_sale)["anomaly_score"]
 
 
 def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.DataFrame:
@@ -31,7 +35,7 @@ def run_synthetic_gap_test(velocity: float, gap_hours_to_test: list[int]) -> pd.
     """
     results = []
     for hours in gap_hours_to_test:
-        score = compute_anomaly_confidence(velocity, hours)["anomaly_confidence"]
+        score = get_anomaly_score(velocity, hours)
         results.append({"Injected_No_Sale_Hours": hours, "Anomaly_Score": round(score, 2)})
     return pd.DataFrame(results)
 
@@ -48,7 +52,7 @@ def run_threshold_sensitivity(catalog_path: str, hours_since_last_sale: int, thr
     """
     df = pd.read_csv(catalog_path)
     df["score"] = df["Calculated_Velocity"].apply(
-        lambda v: compute_anomaly_confidence(v, hours_since_last_sale)["anomaly_confidence"]
+        lambda v: get_anomaly_score(v, hours_since_last_sale)
     )
 
     results = []
@@ -82,7 +86,7 @@ if __name__ == "__main__":
     print("=" * 60)
 
     thresholds_to_test = [80, 85, 90, 95, 99]
-    hours_scenario = 3  # a fixed, realistic period of no sales to test against
+    hours_scenario = 3  # matches the dashboard's default "Current Hours with Zero Sales"
 
     sensitivity_df = run_threshold_sensitivity(
         catalog_path="data/aggregated_catalog.csv",
