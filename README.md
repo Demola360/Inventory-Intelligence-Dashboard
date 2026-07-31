@@ -25,11 +25,11 @@ This project shows how historical sales patterns can be used to identify which p
 
 ## The problem
 
-A retail store's inventory system may record an item as available even though it's physically absent, due to theft, misplacement, or damage. Walking the floor to manually check every slow-moving item wastes staff time, but ignoring the problem means lost sales sitting on a shelf nobody can find. A store carrying thousands of products can't do either well without help.
+A retail store's inventory system may record an item as available even though it's physically absent, due to theft, misplacement, or damage. Walking the floor to manually check every slow-moving item can be a difficult task, but ignoring the problem may impact the stores revenue in the longrun. A store carrying thousands of products will prefer a solution to both.
 
 ## Business objective
 
-Give store and inventory teams a way to prioritise which products to physically check, based on how unusual their current sales silence is, rather than checking every product, checking none, or relying on staff noticing a gap by chance.
+Give store and inventory teams a way to prioritise which products to physically check, based on how unusual their current period of no sales is, rather than checking every product, checking none, or relying on staff noticing a gap by chance.
 
 ## Proposed solution
 
