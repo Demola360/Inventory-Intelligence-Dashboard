@@ -9,11 +9,11 @@ This project shows how historical sales patterns can be used to identify which p
 
 ---
 
-**Critical example:** a higher-velocity product flagged after 6 hours without sales.
+**Critical example:** a product flagged after 16 hours without sales.
 
 ![Critical alert](assets/screenshots/Critical.png)
 
-**Warning example:** a lower-velocity product flagged after 2 hours without sales, its normal rate makes even a short gap unusual.
+**Warning example:** a product flagged after 2 hours without sales, its normal rate makes even a short gap unusual.
 
 ![Warning status](assets/screenshots/Warning.png)
 
