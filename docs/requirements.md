@@ -10,7 +10,7 @@ These describe what the current build actually does, written up after the fact r
 
 **FR03.** The system shall classify the result as Normal, Warning, or Critical, based on where the anomaly score falls relative to a configurable threshold.
 
-**FR04.** The system shall explain, in plain language, why a product received its classification, rather than showing only a raw score.
+**FR04.** The system shall explain, in simple terms, why a product received its classification, rather than showing only a raw score.
 
 **FR05.** A user shall be able to adjust the sales velocity, the length of the sales gap, and the alert threshold, and see the result update accordingly.
 
