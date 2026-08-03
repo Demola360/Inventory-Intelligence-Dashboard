@@ -108,7 +108,7 @@ assumed_velocity = st.sidebar.slider(
     value=float(monitoring_velocity),
     step=0.1,
     key=f"vel_{selected_sku}",
-    help= "The sales rate used for this scenario. Defaults to the product's monitoring rate," 
+    help= "The sales rate used for this scenario. Defaults to the product's monitoring rate, " 
     "shown below, but can be adjusted to explore other scenarios.",
 )
 
@@ -135,8 +135,8 @@ critical_threshold = st.sidebar.slider(
     value=95,
     step=1,
     key="threshold_slider",
-    help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds 
-    generate more alerts, sooner.",
+    help="Products with anomaly scores at or above this threshold are classified as Critical. " 
+        "Lower thresholds generate more alerts, sooner.",
 )
 
 result = compute_anomaly_score(assumed_velocity, hours_zero_sales)
