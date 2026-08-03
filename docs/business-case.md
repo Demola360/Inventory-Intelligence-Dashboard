@@ -24,7 +24,7 @@ At the dashboard's actual default settings, a 3-hour gap and a 95% threshold, ru
 
 ## A future operating target, not a current result
 
-A production implementation would need an agreed investigation-capacity target, defined with store operations, rather than one set by the model itself. For illustration, a target of 1 to 2% of the catalogue would represent roughly 36 to 72 products in a 3,600-SKU catalogue, tighter than the current default, and reaching it would mean raising the threshold further, adding time-of-day awareness, or using real feedback data to separate genuine anomalies from ordinary slow sellers more precisely than a single flat threshold can. None of that tuning has happened yet, so this stays an illustration, not a target this build has been calibrated to hit.
+That number should come from the inventory manager, since they're the one accountable for staff actually completing the checks, not from tuning the model until the output looks convenient. For illustration, a target of 1 to 2% of the catalogue would represent roughly 36 to 72 products in a 3,600-SKU catalogue, tighter than the current default, and reaching it would mean raising the threshold further, adding time-of-day awareness, or using real feedback data to separate genuine anomalies from ordinary slow sellers more precisely than a single flat threshold can. None of that tuning has happened yet, so this stays an illustration, not a target this build has been calibrated to hit.
 
 ## Current process (illustrative)
 
@@ -44,7 +44,6 @@ A sales gap becomes statistically unusual, the product enters a prioritised work
 
 **Decision quality.** Converting raw transaction history into an actionable investigation signal rather than leaving staff to notice gaps by chance.
 
-These are hypothesised benefits based on the concept, not outcomes measured from this POC.
 
 ## Assumptions, constraints, and risks
 
