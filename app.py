@@ -108,8 +108,8 @@ assumed_velocity = st.sidebar.slider(
     value=float(monitoring_velocity),
     step=0.1,
     key=f"vel_{selected_sku}",
-    help="The sales rate used for this scenario. Defaults to the product's monitoring rate, 
-    shown below, but can be adjusted to explore other scenarios.",
+    help= "The sales rate used for this scenario. Defaults to the product's monitoring rate," 
+    "shown below, but can be adjusted to explore other scenarios.",
 )
 
 st.sidebar.caption(
