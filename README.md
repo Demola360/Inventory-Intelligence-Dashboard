@@ -37,7 +37,7 @@ A dashboard that compares each product's normal sales rate against how long it's
 
 ## Potential business value
 
-Fewer missed sales sitting unnoticed on a shelf, and less staff time spent checking products that were never actually a problem, are the outcomes this concept could support. In a real deployment, investigation effort could go toward the handful of products most likely to be worth it, rather than being spread thin across an entire catalogue. These are hypothesised outcomes the concept is built to support, not results this POC has measured.
+Fewer missed sales sitting unnoticed on a shelf, and less staff time spent on products that were never actually a problem. See [the business case](docs/business-case.md) for what it would actually take to measure whether that holds up.
 
 ## Scope
 
