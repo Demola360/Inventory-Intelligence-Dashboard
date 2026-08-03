@@ -248,9 +248,9 @@ st.markdown("---")
 st.markdown("### Priority Worklist")
 st.caption(
     "The five products with the highest anomaly score across the whole "
-    "catalogue, for the same hours-without-sale scenario set above, using "
-    "each product's own monitoring velocity, not the assumed rate above. "
-    "Shelf locations are simulated, not connected to a real warehouse system."
+    "catalogue, for the same hours-without-sale scenario set, using "
+    "each product's own monitoring velocity. Shelf locations are  "
+    "simulated, not connected to a real warehouse system."
 )
 
 worklist_rows = []
