@@ -20,7 +20,7 @@ Explore whether historical sales behaviour can help prioritise which products ar
 
 ## What the model actually flags today
 
-At the dashboard's actual default settings, a 3-hour gap and a 95% threshold, running the model across the full catalogue flags approximately 215 products as Critical, 5.9% of the catalogue. At a 99% threshold, that drops to 111 products, 3.1%. Both figures come directly from `validate_model.py`. Whether that workload is operationally acceptable would need to be agreed with store stakeholders, it depends on staff availability, average check time, and store layout, none of which this POC has visibility into.
+At the dashboard's actual default settings, a 3-hour gap and a 95% threshold, running the model across the full catalogue flags approximately 215 products as Critical, 5.9% of the catalogue. At a 99% threshold, that drops to 111 products, 3.1%. Both figures come directly from `validate_model.py`. Whether 215 checks a day is realistic isn't something I can answer from this data, it depends on how many staff are on shift and how long each check actually takes. That's a conversation with the store manager, not a modelling decision.
 
 ## A future operating target, not a current result
 
