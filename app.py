@@ -71,10 +71,8 @@ if not full_catalog:
     st.stop()
 
 # 6 SKUs selected to show a clear example from each alert tier at default
-# settings (3 hours, 95% threshold): two Normal, two Warning, two Critical.
-# Values are pulled live from the catalog below, never hardcoded, so they
-# can't drift out of sync if the pipeline is rerun with updated data or logic.
-CURATED_SKU_IDS = ["20663", "90214M", "23313", "22999", "23077", "22457"]
+
+CURATED_SKU_IDS = ["23077", "90214M", "23313", "22999", "20663", "22457"]
 CURATED_SKUS = {
     sku: full_catalog[sku]
     for sku in CURATED_SKU_IDS
@@ -93,10 +91,10 @@ selected_sku = st.sidebar.selectbox(
     format_func=lambda x: f"{sku_catalog[x]['Description']} ({x})",
 )
 
-# Three distinct values, not two: the true historical rate, the
-# business-rule-adjusted monitoring rate used by default, and whatever
-# the user sets the scenario slider to. Conflating any of these is
-# misleading, each is shown separately below.
+# Three distinct values: the true historical rate, the
+# business-rule-adjusted monitoring rate used by default, 
+# and whatever the user sets the scenario slider to. 
+# Each is shown separately below.
 observed_velocity = sku_catalog[selected_sku]["Observed_Velocity"]
 monitoring_velocity = sku_catalog[selected_sku]["Monitoring_Velocity"]
 product_desc = sku_catalog[selected_sku]["Description"]
@@ -110,7 +108,8 @@ assumed_velocity = st.sidebar.slider(
     value=float(monitoring_velocity),
     step=0.1,
     key=f"vel_{selected_sku}",
-    help="The sales rate used for this scenario. Defaults to the product's monitoring rate, shown below, but can be adjusted to explore other scenarios.",
+    help="The sales rate used for this scenario. Defaults to the product's monitoring rate, 
+    shown below, but can be adjusted to explore other scenarios.",
 )
 
 st.sidebar.caption(
@@ -136,7 +135,8 @@ critical_threshold = st.sidebar.slider(
     value=95,
     step=1,
     key="threshold_slider",
-    help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds generate more alerts, sooner.",
+    help="Products with anomaly scores at or above this threshold are classified as Critical. Lower thresholds 
+    generate more alerts, sooner.",
 )
 
 result = compute_anomaly_score(assumed_velocity, hours_zero_sales)
@@ -152,7 +152,7 @@ simulated_revenue_exposure = expected_sales_in_window * mock_price if is_flagged
 
 st.title("Inventory Intelligence Dashboard")
 st.markdown(
-    "This dashboard identifies products with unusual sales silence "
+    "This proof-of concept dashboard identifies products with unusual sales gaps "
     "and prioritises them for a physical check."
 )
 
@@ -212,13 +212,15 @@ st.markdown("### Anomaly Assessment")
 if is_critical:
     st.error(f"""
 ### CRITICAL: HIGH SHELF-CHECK PRIORITY ({anomaly_score:.1f}% Anomaly Score)
-**What this means:** it is statistically unusual for this product to have zero sales this long, given its assumed rate. This flags it as worth a physical check, it does not confirm stock is missing.
+**What this means:** it is statistically unusual for this product to have zero sales this long, given its assumed rate. 
+ This flags it as worth a physical check, it does not confirm stock is missing.
 **Recommended action:** treat this as a high-priority item to verify at its location.
 """)
 elif status == "Warning":
     st.warning(f"""
     ### WARNING: ELEVATED RISK ({anomaly_score:.1f}% Anomaly Score)
-    **Observation:** Sales are unusually slow but still within the expected range for this threshold. Worth monitoring before dispatching staff.
+    **Observation:** Sales are unusually slow but still within the expected range for this threshold. 
+     Worth monitoring before dispatching staff.
     """)
 else:
     st.success(f"""
@@ -248,7 +250,6 @@ st.caption(
     "The five products with the highest anomaly score across the whole "
     "catalogue, for the same hours-without-sale scenario set above, using "
     "each product's own monitoring velocity, not the assumed rate above. "
-    "This is a genuinely ranked list, not neighbouring catalogue entries. "
     "Shelf locations are simulated, not connected to a real warehouse system."
 )
 
