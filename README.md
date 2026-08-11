@@ -71,3 +71,6 @@ Python · Streamlit · Pandas · NumPy · SciPy (Poisson)
 - [Limitations](docs/limitations.md), assumptions, constraints, and known weaknesses
 - [Business case](docs/business-case.md), stakeholders, process flow, and what a production rollout would need
 - [Requirements](docs/requirements.md), the functional and business rules behind the current build
+- [Acceptance criteria](docs/acceptance-criteria.md), testable conditions tied to observable application behaviour
+- [UAT-style test scenarios](docs/uat-style-test-scenarios.md), self-conducted test scenarios tracing back to the acceptance criteria
+- [Process map](docs/process-map.md), current-state and future-state views of the shelf-check workflow
